@@ -1,15 +1,21 @@
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
+// Adiciona controllers
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
+//Adiciona Swagger para documentacao da API
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Registra os módulos e demais serviços
+builder.Services.AddRabbitMqService(builder.Configuration);
+builder.Services.AddClientModule();
+builder.Services.AddCreditCardModule();
+builder.Services.AddCreditProposalModule();
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configura a pipeline de HTTP request.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -22,4 +28,4 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+await app.RunAsync();
