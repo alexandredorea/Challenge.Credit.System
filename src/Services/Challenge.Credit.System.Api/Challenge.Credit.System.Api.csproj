@@ -15,10 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Challenge.Credit.System.Module.Client\Challenge.Credit.System.Module.Client.csproj" />
     <ProjectReference Include="..\Challenge.Credit.System.Module.CreditCard\Challenge.Credit.System.Module.CreditCard.csproj" />
     <ProjectReference Include="..\Challenge.Credit.System.Module.CreditProposal\Challenge.Credit.System.Module.CreditProposal.csproj" />

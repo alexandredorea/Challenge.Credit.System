@@ -8,10 +8,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Registra os módulos e demais serviços
-builder.Services.AddRabbitMqService(builder.Configuration);
-builder.Services.AddClientModule();
-builder.Services.AddCreditCardModule();
-builder.Services.AddCreditProposalModule();
+builder.AddRabbitMqService();
+builder.AddClientModule();
+builder.AddCreditCardModule();
+builder.AddCreditProposalModule();
 
 var app = builder.Build();
 

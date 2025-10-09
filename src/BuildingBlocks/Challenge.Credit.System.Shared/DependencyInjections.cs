@@ -2,26 +2,30 @@
 
 using Challenge.Credit.System.Shared.Messaging;
 using Challenge.Credit.System.Shared.Messaging.Interfaces;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 public static class DependencyInjections
 {
-    public static IServiceCollection AddRabbitMqService(this IServiceCollection services, IConfiguration configuration)
+    public static IHostApplicationBuilder AddRabbitMqService(this IHostApplicationBuilder builder)
     {
-        //TODO: adicionar as dependencias
+        // Obtem o hostName do RabbitMQ da configuração
+        var hostName = builder.Configuration["RabbitMq:HostName"];
+        if (string.IsNullOrWhiteSpace(hostName))
+            throw new ArgumentException("RabbitMQ: 'Hostname' do servidor não encontrada.");
 
-
-        // Pega RabbitMQ hostname da configuração
-        var rabbitMqHost = configuration["RabbitMq:HostName"];
-        if (string.IsNullOrWhiteSpace(rabbitMqHost))
-            throw new ArgumentException("");
+        builder.Services.AddSingleton<IMessagePublisher>(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<RabbitMqPublisher>>();
+            return new RabbitMqPublisher(hostName, logger);
+        });
         
-        // Registra RabbitMQ Publisher as a singleton
-        services.AddSingleton<IMessagePublisher>(sp => new RabbitMqPublisher(rabbitMqHost, new NullLogger<RabbitMqPublisher>()));
+        // Registrar o serviço de inicialização da mensageria
+        builder.Services.AddHostedService<AsyncInitializationService>();
 
-        return services;
+        // Registrar a classe como IAsyncInitializable
+        builder.Services.AddSingleton<IAsyncInitializable>(sp => sp.GetRequiredService<IMessagePublisher>() as IAsyncInitializable);
+
+        return builder;
     }
-
-
 }

@@ -1,0 +1,54 @@
+using Challenge.Credit.System.Module.Client.Core.Application.DataTransferObjects;
+using Challenge.Credit.System.Module.Client.Core.Application.Services;
+using Challenge.Credit.System.Shared.Models;
+using Microsoft.AspNetCore.Mvc;
+
+namespace Challenge.Credit.System.Api.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public sealed class ClientsController(IClientService clienteService) : ControllerBase
+{
+    [HttpGet]
+    [ProducesResponseType(typeof(ApiResult<List<ClientResponse>>), 200)]
+    public async Task<ActionResult<ApiResult<List<ClientResponse>>>> GetAllAsync(CancellationToken cancellationToken)
+    {
+        var client = await clienteService.GetAllAsync(cancellationToken);
+        return Ok(ApiResult<List<ClientResponse>>.SuccessResult(client));
+    }
+
+    [HttpGet("{id:guid}")]
+    [ProducesResponseType(typeof(ApiResult<ClientResponse>), 200)]
+    [ProducesResponseType(typeof(ApiResult<ClientResponse>), 404)]
+    public async Task<ActionResult<ApiResult<ClientResponse>>> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var client = await clienteService.GetByIdAsync(id, cancellationToken);
+
+        if (client is null)
+            return NotFound(ApiResult<ClientResponse>.FailureResult("Cliente não encontrado.", "NOT_FOUND"));
+
+        return Ok(ApiResult<ClientResponse>.SuccessResult(client));
+    }
+
+    [HttpPost]
+    [ProducesResponseType(typeof(ApiResult<ClientResponse>), 201)]
+    [ProducesResponseType(typeof(ApiResult<ClientResponse>), 400)]
+    [ProducesResponseType(typeof(ApiResult<ClientResponse>), 409)]
+    public async Task<ActionResult<ApiResult<ClientResponse>>> CreateAsync([FromBody] CreateClientRequest request, CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values.SelectMany(v => v.Errors)
+                .Select(e => new ErrorDetail { Code = "VALIDATION_ERROR", Message = e.ErrorMessage })
+                .ToList();
+            return BadRequest(ApiResult<ClientResponse>.FailureResult("Dados inválidos", errors));
+        }
+
+        var result = await clienteService.CreateAsync(request, cancellationToken);
+
+        if (result is null)
+            return Conflict(ApiResult<ClientResponse>.FailureResult("CPF ou Email já cadastrado.", "DUPLICATE_ENTRY"));
+
+        return CreatedAtAction(nameof(GetByIdAsync), new { id = result.Id }, ApiResult<ClientResponse>.SuccessResult(result, "Cliente cadastrado com sucesso."));
+    }
+}
