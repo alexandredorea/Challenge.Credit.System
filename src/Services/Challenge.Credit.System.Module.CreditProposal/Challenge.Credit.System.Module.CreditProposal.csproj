@@ -8,8 +8,7 @@
 
   <ItemGroup>
     <Folder Include="Core\Application\DataTransferObjects\" />
-    <Folder Include="Core\Application\UseCases\" />
-    <Folder Include="Infrastructure\Data\" />
+    <Folder Include="Infrastructure\Interceptors\" />
   </ItemGroup>
 
   <ItemGroup>

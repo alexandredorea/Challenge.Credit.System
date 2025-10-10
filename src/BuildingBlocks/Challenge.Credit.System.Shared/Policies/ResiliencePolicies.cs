@@ -1,11 +1,11 @@
-﻿using Microsoft.Extensions.Logging;
+﻿namespace Challenge.Credit.System.Shared.Policies;
+
+using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.CircuitBreaker;
 using Polly.Retry;
 using Polly.Timeout;
 using RabbitMQ.Client.Exceptions;
-
-namespace Challenge.Credit.System.Shared.Policies;
 
 public static class ResiliencePolicies
 {

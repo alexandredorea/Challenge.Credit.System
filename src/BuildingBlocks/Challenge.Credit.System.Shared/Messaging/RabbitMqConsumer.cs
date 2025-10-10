@@ -1,12 +1,11 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿namespace Challenge.Credit.System.Shared.Messaging;
 
-namespace Challenge.Credit.System.Shared.Messaging
+using Microsoft.Extensions.Hosting;
+
+internal class RabbitMqConsumer : BackgroundService
 {
-    internal class RabbitMqConsumer : BackgroundService
+    protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            throw new NotImplementedException();
-        }
+        throw new NotImplementedException();
     }
 }

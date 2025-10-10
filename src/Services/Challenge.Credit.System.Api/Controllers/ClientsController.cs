@@ -1,25 +1,28 @@
 using Challenge.Credit.System.Module.Client.Core.Application.DataTransferObjects;
 using Challenge.Credit.System.Module.Client.Core.Application.Services;
 using Challenge.Credit.System.Shared.Models;
+using System.Net.Mime;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Challenge.Credit.System.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Produces(MediaTypeNames.Application.Json)]
+[Consumes(MediaTypeNames.Application.Json)]
 public sealed class ClientsController(IClientService clienteService) : ControllerBase
 {
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResult<List<ClientResponse>>), 200)]
-    public async Task<ActionResult<ApiResult<List<ClientResponse>>>> GetAllAsync(CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(ApiResult<IEnumerable<ClientResponse>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResult<IEnumerable<ClientResponse>>>> GetAllAsync(CancellationToken cancellationToken)
     {
         var client = await clienteService.GetAllAsync(cancellationToken);
-        return Ok(ApiResult<List<ClientResponse>>.SuccessResult(client));
+        return Ok(ApiResult<IEnumerable<ClientResponse?>>.SuccessResult(client));
     }
 
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(typeof(ApiResult<ClientResponse>), 200)]
-    [ProducesResponseType(typeof(ApiResult<ClientResponse>), 404)]
+    [ProducesResponseType(typeof(ApiResult<ClientResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResult<ClientResponse>), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ApiResult<ClientResponse>>> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         var client = await clienteService.GetByIdAsync(id, cancellationToken);
@@ -31,9 +34,9 @@ public sealed class ClientsController(IClientService clienteService) : Controlle
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(ApiResult<ClientResponse>), 201)]
-    [ProducesResponseType(typeof(ApiResult<ClientResponse>), 400)]
-    [ProducesResponseType(typeof(ApiResult<ClientResponse>), 409)]
+    [ProducesResponseType(typeof(ApiResult<ClientResponse>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResult<ClientResponse>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResult<ClientResponse>), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<ApiResult<ClientResponse>>> CreateAsync([FromBody] CreateClientRequest request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)

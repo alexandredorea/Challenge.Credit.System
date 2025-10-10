@@ -1,26 +1,29 @@
-﻿using Challenge.Credit.System.Module.Client.Core.Application.DataTransferObjects;
+﻿namespace Challenge.Credit.System.Module.Client.Core.Application.Services;
+
+using Challenge.Credit.System.Module.Client.Core.Application.DataTransferObjects;
 using Challenge.Credit.System.Module.Client.Core.Application.Interfaces;
-using Challenge.Credit.System.Module.Client.Core.Domain.Events;
+using Challenge.Credit.System.Shared.Events.Clients;
 using Challenge.Credit.System.Shared.Messaging.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace Challenge.Credit.System.Module.Client.Core.Application.Services;
-
 public interface IClientService
 {
-    Task<List<ClientResponse?>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<IEnumerable<ClientResponse?>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<ClientResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<ClientResponse?> CreateAsync(CreateClientRequest request, CancellationToken cancellationToken = default);
 }
 
-internal sealed class ClientService(IClientDbContext context, IMessagePublisher messagePublisher) : IClientService
+internal sealed class ClientService(
+    IClientDbContext context, 
+    IMessagePublisher messagePublisher) : IClientService
 {
-    public async Task<List<ClientResponse?>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<ClientResponse?>> GetAllAsync(CancellationToken cancellationToken = default)
     {
+        //TODO: paginacao
         var clients = await context.Clients
             .OrderByDescending(c => c.CreatedAt)
             .ToListAsync(cancellationToken);
-
+        
         return clients.Select(item => (ClientResponse?)item).ToList();
     }
 
@@ -31,7 +34,7 @@ internal sealed class ClientService(IClientDbContext context, IMessagePublisher 
 
     public async Task<ClientResponse?> CreateAsync(CreateClientRequest request, CancellationToken cancellationToken = default)
     {
-        var documentNumberExists = await context.Clients.AnyAsync(c => c.DocumentNumber == request.DocumentNumber, cancellationToken);
+        var documentNumberExists = await context.Clients.AnyAsync(c => c.Document.Number == request.DocumentNumber, cancellationToken);
         if (documentNumberExists)
             return null;
 
@@ -39,7 +42,7 @@ internal sealed class ClientService(IClientDbContext context, IMessagePublisher 
         if (emailExists)
             return null;
 
-        var client = new Domain.Entities.Client(request.Name, request.DocumentNumber, request.Email, request.Telephone, request.DateBirth, request.MonthlyIncome);
+        var client = Domain.Entities.Client.Create(request.Name, request.DocumentNumber, request.Email, request.Telephone, request.DateBirth, request.MonthlyIncome);
 
         context.Clients.Add(client);
         await context.SaveChangesAsync(cancellationToken);
@@ -48,7 +51,7 @@ internal sealed class ClientService(IClientDbContext context, IMessagePublisher 
         var @event = new ClientCreatedEvent(
             client.Id,
             client.Name,
-            client.DocumentNumber,
+            client.Document.Number,
             client.Email,
             client.MonthlyIncome,
             client.Telephone,

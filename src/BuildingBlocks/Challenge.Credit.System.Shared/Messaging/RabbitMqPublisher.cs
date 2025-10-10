@@ -8,7 +8,6 @@ using RabbitMQ.Client;
 
 namespace Challenge.Credit.System.Shared.Messaging;
 
-
 internal sealed class RabbitMqPublisher : IMessagePublisher, IAsyncInitializable, IAsyncDisposable
 {
     private IConnection? _connection;

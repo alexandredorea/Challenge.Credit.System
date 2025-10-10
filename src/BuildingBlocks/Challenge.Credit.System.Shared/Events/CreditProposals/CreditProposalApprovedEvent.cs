@@ -1,4 +1,4 @@
-﻿namespace Challenge.Credit.System.Module.CreditProposal.Core.Domain.Events;
+﻿namespace Challenge.Credit.System.Shared.Events.CreditProposals;
 
 public sealed record CreditProposalApprovedEvent(
     Guid Id,

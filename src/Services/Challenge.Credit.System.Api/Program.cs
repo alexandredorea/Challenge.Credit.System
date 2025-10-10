@@ -7,7 +7,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Registra os módulos e demais serviços
+// Registra os módulos e demais serviços do desafio.
 builder.AddRabbitMqService();
 builder.AddClientModule();
 builder.AddCreditCardModule();

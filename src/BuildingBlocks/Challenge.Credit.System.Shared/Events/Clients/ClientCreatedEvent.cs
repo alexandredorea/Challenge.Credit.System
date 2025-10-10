@@ -1,4 +1,4 @@
-﻿namespace Challenge.Credit.System.Module.Client.Core.Domain.Events;
+﻿namespace Challenge.Credit.System.Shared.Events.Clients;
 
 public sealed record ClientCreatedEvent(
     Guid Id,

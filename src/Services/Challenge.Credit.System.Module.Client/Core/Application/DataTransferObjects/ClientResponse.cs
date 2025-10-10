@@ -1,5 +1,4 @@
-﻿
-namespace Challenge.Credit.System.Module.Client.Core.Application.DataTransferObjects;
+﻿namespace Challenge.Credit.System.Module.Client.Core.Application.DataTransferObjects;
 
 public sealed record ClientResponse(
     Guid Id,
@@ -19,7 +18,7 @@ public sealed record ClientResponse(
         return new(
             Id: client.Id,
             Name: client.Name,
-            DocumentNumber: client.DocumentNumber,
+            DocumentNumber: client.Document.Number,
             Email: client.Email,
             Telephone: client.Telephone,
             DateBirth: client.DateBirth,
