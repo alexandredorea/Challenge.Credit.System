@@ -1,9 +1,9 @@
-﻿namespace Microsoft.Extensions.DependencyInjection;
-
-using Challenge.Credit.System.Shared.Messaging;
+﻿using Challenge.Credit.System.Shared.Messaging;
 using Challenge.Credit.System.Shared.Messaging.Interfaces;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+
+namespace Microsoft.Extensions.DependencyInjection;
 
 public static class DependencyInjections
 {
@@ -19,7 +19,7 @@ public static class DependencyInjections
             var logger = sp.GetRequiredService<ILogger<RabbitMqPublisher>>();
             return new RabbitMqPublisher(hostName, logger);
         });
-        
+
         // Registrar o serviço de inicialização da mensageria
         builder.Services.AddHostedService<AsyncInitializationService>();
 

@@ -4,6 +4,7 @@ namespace Challenge.Credit.System.Module.CreditProposal.Core.Domain.Interfaces;
 
 public interface IScorePolicy
 {
-    bool IsApplicable(int score);
     void Apply(Proposal proposal);
+
+    bool IsApplicable(int score);
 }

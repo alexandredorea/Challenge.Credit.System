@@ -1,4 +1,4 @@
-using Challenge.Credit.System.Module.Client.Core.Application.Interfaces;
+using Challenge.Credit.System.Module.CreditProposal.Core.Application.Interfaces;
 using Challenge.Credit.System.Module.CreditProposal.Core.Domain.Entities;
 using Challenge.Credit.System.Module.CreditProposal.Core.Domain.Interfaces;
 using Challenge.Credit.System.Module.CreditProposal.Core.Domain.ValueObjects;
@@ -8,9 +8,10 @@ using Challenge.Credit.System.Shared.Messaging.Interfaces;
 
 namespace Challenge.Credit.System.Module.CreditProposal.Core.Application.Services;
 
-public interface IPropostaService
+public interface IProposalService
 {
     Task HandleAsync(ClientCreatedEvent @event, CancellationToken cancellationToken = default);
+
     //TODO: adicionar metodos Onter Por Id, Obter Propostas por Cliente, Listar todas as proposta
 }
 
@@ -18,7 +19,7 @@ public sealed class ProposalService(
     IProposalDbContext context,
     IScoreCalculator scoreCalculator,
     IScoreEvaluator scoreEvaluator,
-    IMessagePublisher messagePublisher) : IPropostaService
+    IMessagePublisher messagePublisher) : IProposalService
 {
     public async Task HandleAsync(ClientCreatedEvent @event, CancellationToken cancellationToken = default)
     {
@@ -29,13 +30,13 @@ public sealed class ProposalService(
             clientDocumentNumber: @event.DocumentNumber,
             monthlyIncome: @event.MonthlyIncome,
             score: score);
-        
+
         scoreEvaluator.Evaluate(proposal);
 
         await context.Proposals.AddAsync(proposal, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
 
-        // TODO: Usar Domain Events, Factory ou ja implementar direto Implementar Outbox Pattern (SAGA) para evitar salvar o proposta e nao gerar cartao em caso do rabbit estar fora do ar?
+        // TODO: Usar Domain Events, Factory ou ja implementar direto Outbox Pattern (SAGA) para evitar salvar o proposta e nao gerar cartao em caso do rabbit estar fora do ar?
         if (proposal.Status == StatusProposal.Approved)
         {
             var proposalApproved = new CreditProposalApprovedEvent(
@@ -57,8 +58,8 @@ public sealed class ProposalService(
                 ClientId: proposal.ClientId,
                 ClientName: proposal.ClientName,
                 ClientDocumentNumber: proposal.ClientDocumentNumber,
-                Score: proposal.Score, 
-                proposal.RejectionReason!, 
+                Score: proposal.Score,
+                proposal.RejectionReason!,
                 proposal.EvaluationDate);
 
             await messagePublisher.PublishAsync("proposta.reprovada", proposalRejected, cancellationToken);

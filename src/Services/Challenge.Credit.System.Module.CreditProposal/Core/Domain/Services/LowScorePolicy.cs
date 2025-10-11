@@ -5,9 +5,10 @@ namespace Challenge.Credit.System.Module.CreditProposal.Core.Domain.Services;
 
 internal sealed class LowScorePolicy : IScorePolicy
 {
-    public bool IsApplicable(int score) => score <= 100;
     public void Apply(Proposal proposal)
     {
-        proposal.Reject("Score insuficiente para aprovação de crédito");        
+        proposal.Reject("Score insuficiente para aprovação de crédito");
     }
+
+    public bool IsApplicable(int score) => score <= 100;
 }

@@ -1,5 +1,10 @@
-﻿using Challenge.Credit.System.Module.CreditProposal.Core.Domain.Interfaces;
+﻿using Challenge.Credit.System.Module.CreditProposal.Consumers;
+using Challenge.Credit.System.Module.CreditProposal.Core.Application.Interfaces;
+using Challenge.Credit.System.Module.CreditProposal.Core.Application.Services;
+using Challenge.Credit.System.Module.CreditProposal.Core.Domain.Interfaces;
 using Challenge.Credit.System.Module.CreditProposal.Core.Domain.Services;
+using Challenge.Credit.System.Module.CreditProposal.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 
 namespace Microsoft.Extensions.DependencyInjection;
@@ -8,7 +13,27 @@ public static class DependencyInjections
 {
     public static IHostApplicationBuilder AddCreditProposalModule(this IHostApplicationBuilder builder)
     {
-        //TODO: adicionar as dependencias
+        // Adiciona o banco de dados
+        AddDatabase(builder);
+
+        // Registra e configura os servicos
+        AddServices(builder);
+
+        // Registrar os consumidores
+        AddConsumers(builder);
+
+        return builder;
+    }
+
+    private static void AddDatabase(IHostApplicationBuilder builder)
+    {
+        builder.Services.AddDbContext<ProposalDbContext>(options => options.UseInMemoryDatabase("ClientDb"));
+        builder.Services.AddScoped<IProposalDbContext>(provider => provider.GetRequiredService<ProposalDbContext>());
+    }
+
+    private static void AddServices(IHostApplicationBuilder builder)
+    {
+        builder.Services.AddScoped<IProposalService, ProposalService>();
 
         // Registrar políticas de score
         builder.Services.AddScoped<IScoreCalculator, ScoreCalculator>();
@@ -16,7 +41,11 @@ public static class DependencyInjections
         builder.Services.AddScoped<IScorePolicy, LowScorePolicy>();
         builder.Services.AddScoped<IScorePolicy, MediumScorePolicy>();
         builder.Services.AddScoped<IScorePolicy, HighScorePolicy>();
+    }
 
-        return builder;
+    private static void AddConsumers(IHostApplicationBuilder builder)
+    {
+        //builder.Services.AddScoped<IMessageConsumer, ClientCreatedEventConsumer>();
+        builder.Services.AddScoped<ClientCreatedEventConsumer>();
     }
 }

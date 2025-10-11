@@ -1,12 +1,13 @@
-﻿namespace Challenge.Credit.System.Module.Client.Infrastructure.Data;
-
-using Challenge.Credit.System.Module.Client.Core.Application.Interfaces;
+﻿using Challenge.Credit.System.Module.Client.Core.Application.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-internal sealed class ClientDbContext(DbContextOptions<ClientDbContext> options) 
+namespace Challenge.Credit.System.Module.Client.Infrastructure.Data;
+
+internal sealed class ClientDbContext(DbContextOptions<ClientDbContext> options)
     : DbContext(options), IClientDbContext
 {
     public DbSet<Core.Domain.Entities.Client> Clients => Set<Core.Domain.Entities.Client>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -16,13 +17,13 @@ internal sealed class ClientDbContext(DbContextOptions<ClientDbContext> options)
             entity.HasKey(e => e.Id);
 
             entity.Property(e => e.Name).IsRequired().HasMaxLength(200).IsUnicode(false);
-            
+
             entity.ComplexProperty(c => c.Document, document =>
             {
                 document.Property(d => d.Number)
                     .HasColumnName("DocumentNumber")
                     .IsRequired()
-                    .HasMaxLength(14).IsUnicode(false); 
+                    .HasMaxLength(14).IsUnicode(false);
 
                 document.Property(d => d.Type)
                     .HasColumnName("DocumentType")

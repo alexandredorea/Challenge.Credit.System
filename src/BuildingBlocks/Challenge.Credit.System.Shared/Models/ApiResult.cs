@@ -14,7 +14,7 @@ public sealed class ApiResult<T>
             Success = true,
             Message = message,
             Data = data,
-            Error = []
+            Error = null
         };
     }
 
@@ -25,7 +25,7 @@ public sealed class ApiResult<T>
             Success = false,
             Message = message,
             Data = default,
-            Error = errors ?? []
+            Error = errors
         };
     }
 

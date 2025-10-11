@@ -10,13 +10,13 @@ namespace Challenge.Credit.System.Shared.Messaging;
 
 internal sealed class RabbitMqPublisher : IMessagePublisher, IAsyncInitializable, IAsyncDisposable
 {
-    private IConnection? _connection;
-    private IChannel? _channel;
-    private readonly string _hostName;
-    private readonly string _exchangeName;
-    private readonly ILogger<RabbitMqPublisher> _logger;
     private readonly AsyncRetryPolicy _connectionRetryPolicy;
+    private readonly string _exchangeName;
+    private readonly string _hostName;
+    private readonly ILogger<RabbitMqPublisher> _logger;
     private readonly AsyncRetryPolicy _publishRetryPolicy;
+    private IChannel? _channel;
+    private IConnection? _connection;
 
     public RabbitMqPublisher(
         string hostName,
@@ -29,7 +29,7 @@ internal sealed class RabbitMqPublisher : IMessagePublisher, IAsyncInitializable
 
         // Política de retry para a conexão inicial
         _connectionRetryPolicy = ResiliencePolicies.CreateRetryPolicy(_logger, maxRetryAttempts: 3);
-        
+
         // Política de retry para a publicação de mensagens
         _publishRetryPolicy = ResiliencePolicies.CreateMessagingRetryPolicy(_logger);
     }
@@ -87,7 +87,7 @@ internal sealed class RabbitMqPublisher : IMessagePublisher, IAsyncInitializable
 
     public async ValueTask DisposeAsync()
     {
-        if (_channel != null)
+        if (_channel is not null)
         {
             try
             {
@@ -98,9 +98,13 @@ internal sealed class RabbitMqPublisher : IMessagePublisher, IAsyncInitializable
             {
                 _logger.LogError(ex, "Erro ao fechar o canal RabbitMQ durante DisposeAsync.");
             }
+            finally
+            {
+                _channel = null;
+            }
         }
 
-        if (_connection != null)
+        if (_connection is not null)
         {
             try
             {
@@ -110,6 +114,10 @@ internal sealed class RabbitMqPublisher : IMessagePublisher, IAsyncInitializable
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erro ao fechar a conexão RabbitMQ durante DisposeAsync.");
+            }
+            finally
+            {
+                _connection = null;
             }
         }
 

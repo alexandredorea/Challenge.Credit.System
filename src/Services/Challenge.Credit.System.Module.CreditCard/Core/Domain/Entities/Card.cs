@@ -1,17 +1,17 @@
 namespace Challenge.Credit.System.Module.CreditCard.Core.Domain.Entities;
 
 public sealed record CartaoCredito(
-    Guid ProposalId, 
-    Guid ClientId, 
-    string ClientName, 
-    string ClientDocumentNumber, 
+    Guid ProposalId,
+    Guid ClientId,
+    string ClientName,
+    string ClientDocumentNumber,
     string CardNumber,
     string Cvv,
-    DateTime ExpirationDate, 
-    decimal AvaliableLimit, 
-    decimal TotalLimit, 
-    CardStatus Status, 
-    DateTime? ActivationDate = null, 
+    DateTime ExpirationDate,
+    decimal AvaliableLimit,
+    decimal TotalLimit,
+    CardStatus Status,
+    DateTime? ActivationDate = null,
     DateTime? BlockDate = null)
 {
     public Guid Id { get; init; } = Guid.NewGuid();

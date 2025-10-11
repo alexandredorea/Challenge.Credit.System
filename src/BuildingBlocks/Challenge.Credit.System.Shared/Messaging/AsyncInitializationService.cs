@@ -1,7 +1,7 @@
-﻿namespace Challenge.Credit.System.Shared.Messaging;
-
-using Challenge.Credit.System.Shared.Messaging.Interfaces;
+﻿using Challenge.Credit.System.Shared.Messaging.Interfaces;
 using Microsoft.Extensions.Hosting;
+
+namespace Challenge.Credit.System.Shared.Messaging;
 
 public sealed class AsyncInitializationService(IEnumerable<IAsyncInitializable> initializables) : IHostedService
 {

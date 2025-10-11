@@ -1,20 +1,22 @@
-﻿namespace Challenge.Credit.System.Module.Client.Core.Application.Services;
-
-using Challenge.Credit.System.Module.Client.Core.Application.DataTransferObjects;
+﻿using Challenge.Credit.System.Module.Client.Core.Application.DataTransferObjects;
 using Challenge.Credit.System.Module.Client.Core.Application.Interfaces;
 using Challenge.Credit.System.Shared.Events.Clients;
 using Challenge.Credit.System.Shared.Messaging.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
+namespace Challenge.Credit.System.Module.Client.Core.Application.Services;
+
 public interface IClientService
 {
     Task<IEnumerable<ClientResponse?>> GetAllAsync(CancellationToken cancellationToken = default);
+
     Task<ClientResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+
     Task<ClientResponse?> CreateAsync(CreateClientRequest request, CancellationToken cancellationToken = default);
 }
 
 internal sealed class ClientService(
-    IClientDbContext context, 
+    IClientDbContext context,
     IMessagePublisher messagePublisher) : IClientService
 {
     public async Task<IEnumerable<ClientResponse?>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -23,7 +25,7 @@ internal sealed class ClientService(
         var clients = await context.Clients
             .OrderByDescending(c => c.CreatedAt)
             .ToListAsync(cancellationToken);
-        
+
         return clients.Select(item => (ClientResponse?)item).ToList();
     }
 
@@ -34,8 +36,8 @@ internal sealed class ClientService(
 
     public async Task<ClientResponse?> CreateAsync(CreateClientRequest request, CancellationToken cancellationToken = default)
     {
-        var documentNumberExists = await context.Clients.AnyAsync(c => c.Document.Number == request.DocumentNumber, cancellationToken);
-        if (documentNumberExists)
+        var documentExists = await context.Clients.AnyAsync(c => c.Document.Number == request.DocumentNumber, cancellationToken);
+        if (documentExists)
             return null;
 
         var emailExists = await context.Clients.AnyAsync(c => c.Email == request.Email, cancellationToken);

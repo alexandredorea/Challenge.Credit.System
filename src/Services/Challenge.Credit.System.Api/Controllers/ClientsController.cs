@@ -1,7 +1,7 @@
+using System.Net.Mime;
 using Challenge.Credit.System.Module.Client.Core.Application.DataTransferObjects;
 using Challenge.Credit.System.Module.Client.Core.Application.Services;
 using Challenge.Credit.System.Shared.Models;
-using System.Net.Mime;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Challenge.Credit.System.Api.Controllers;
@@ -14,7 +14,7 @@ public sealed class ClientsController(IClientService clienteService) : Controlle
 {
     [HttpGet]
     [ProducesResponseType(typeof(ApiResult<IEnumerable<ClientResponse>>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<ApiResult<IEnumerable<ClientResponse>>>> GetAllAsync(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAllAsync(CancellationToken cancellationToken)
     {
         var client = await clienteService.GetAllAsync(cancellationToken);
         return Ok(ApiResult<IEnumerable<ClientResponse?>>.SuccessResult(client));
@@ -23,7 +23,7 @@ public sealed class ClientsController(IClientService clienteService) : Controlle
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(ApiResult<ClientResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResult<ClientResponse>), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<ApiResult<ClientResponse>>> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         var client = await clienteService.GetByIdAsync(id, cancellationToken);
 
@@ -35,16 +35,16 @@ public sealed class ClientsController(IClientService clienteService) : Controlle
 
     [HttpPost]
     [ProducesResponseType(typeof(ApiResult<ClientResponse>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResult<ClientResponse>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResult<ClientResponse>), StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<ApiResult<ClientResponse>>> CreateAsync([FromBody] CreateClientRequest request, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(ApiResult<ClientResponse>), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> CreateAsync([FromBody] CreateClientRequest request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
         {
             var errors = ModelState.Values.SelectMany(v => v.Errors)
                 .Select(e => new ErrorDetail { Code = "VALIDATION_ERROR", Message = e.ErrorMessage })
                 .ToList();
-            return BadRequest(ApiResult<ClientResponse>.FailureResult("Dados inválidos", errors));
+            return UnprocessableEntity(ApiResult<ClientResponse>.FailureResult("Dados inválidos", errors));
         }
 
         var result = await clienteService.CreateAsync(request, cancellationToken);
@@ -52,6 +52,9 @@ public sealed class ClientsController(IClientService clienteService) : Controlle
         if (result is null)
             return Conflict(ApiResult<ClientResponse>.FailureResult("CPF ou Email já cadastrado.", "DUPLICATE_ENTRY"));
 
-        return CreatedAtAction(nameof(GetByIdAsync), new { id = result.Id }, ApiResult<ClientResponse>.SuccessResult(result, "Cliente cadastrado com sucesso."));
+        return CreatedAtAction(
+            actionName: nameof(GetByIdAsync),
+            routeValues: new { id = result.Id },
+            value: ApiResult<ClientResponse>.SuccessResult(result, "Cliente cadastrado com sucesso."));
     }
 }

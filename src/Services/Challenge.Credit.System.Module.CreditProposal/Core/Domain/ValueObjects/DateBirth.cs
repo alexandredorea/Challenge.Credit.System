@@ -17,7 +17,7 @@ public sealed class DateBirth
         var today = DateTime.Today;
         var age = today.Year - Value.Year;
 
-        if (Value.Date > today.AddYears(-age)) 
+        if (Value.Date > today.AddYears(-age))
             age--;
 
         return age;
