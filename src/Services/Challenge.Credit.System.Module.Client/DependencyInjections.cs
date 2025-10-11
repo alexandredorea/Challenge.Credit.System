@@ -10,14 +10,24 @@ public static class DependencyInjections
 {
     public static IHostApplicationBuilder AddClientModule(this IHostApplicationBuilder builder)
     {
+        builder.AddDatabase();
+        builder.AddServices();
+
+        return builder;
+    }
+
+    private static void AddDatabase(this IHostApplicationBuilder builder)
+    {
         //var connectionString = builder.Configuration.GetConnectionString("ClientDb");
         //if (string.IsNullOrWhiteSpace(connectionString))
         //    throw new ArgumentException("ConnectionString 'ClientDb' não encontrada.");
 
         builder.Services.AddDbContext<ClientDbContext>(options => options.UseInMemoryDatabase("ClientDb"));
         builder.Services.AddScoped<IClientDbContext>(provider => provider.GetRequiredService<ClientDbContext>());
+    }
 
+    private static void AddServices(this IHostApplicationBuilder builder)
+    {
         builder.Services.AddScoped<IClientService, ClientService>();
-        return builder;
     }
 }

@@ -13,25 +13,20 @@ public static class DependencyInjections
 {
     public static IHostApplicationBuilder AddCreditProposalModule(this IHostApplicationBuilder builder)
     {
-        // Adiciona o banco de dados
-        AddDatabase(builder);
-
-        // Registra e configura os servicos
-        AddServices(builder);
-
-        // Registrar os consumidores
-        AddConsumers(builder);
+        builder.AddDatabase();
+        builder.AddServices();
+        builder.AddConsumers();
 
         return builder;
     }
 
-    private static void AddDatabase(IHostApplicationBuilder builder)
+    private static void AddDatabase(this IHostApplicationBuilder builder)
     {
-        builder.Services.AddDbContext<ProposalDbContext>(options => options.UseInMemoryDatabase("ClientDb"));
+        builder.Services.AddDbContext<ProposalDbContext>(options => options.UseInMemoryDatabase("ProposalDb"));
         builder.Services.AddScoped<IProposalDbContext>(provider => provider.GetRequiredService<ProposalDbContext>());
     }
 
-    private static void AddServices(IHostApplicationBuilder builder)
+    private static void AddServices(this IHostApplicationBuilder builder)
     {
         builder.Services.AddScoped<IProposalService, ProposalService>();
 
@@ -43,7 +38,7 @@ public static class DependencyInjections
         builder.Services.AddScoped<IScorePolicy, HighScorePolicy>();
     }
 
-    private static void AddConsumers(IHostApplicationBuilder builder)
+    private static void AddConsumers(this IHostApplicationBuilder builder)
     {
         //builder.Services.AddScoped<IMessageConsumer, ClientCreatedEventConsumer>();
         builder.Services.AddScoped<ClientCreatedEventConsumer>();

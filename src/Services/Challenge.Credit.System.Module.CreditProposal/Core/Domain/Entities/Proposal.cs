@@ -5,7 +5,6 @@ public sealed class Proposal
     public Guid Id { get; private set; }
     public Guid ClientId { get; private set; }
     public string ClientName { get; private set; } = string.Empty;
-    public string ClientDocumentNumber { get; private set; } = string.Empty;
     public decimal MonthlyIncome { get; private set; }
     public int Score { get; private set; }
     public DateTime CreatedAt { get; private set; }
@@ -18,12 +17,11 @@ public sealed class Proposal
     private Proposal()
     { }
 
-    private Proposal(Guid clientId, string clientName, string clientDocumentNumber, decimal monthlyIncome, int score)
+    private Proposal(Guid clientId, string clientName, decimal monthlyIncome, int score)
     {
         Id = Guid.NewGuid();
         ClientId = clientId;
         ClientName = clientName;
-        ClientDocumentNumber = clientDocumentNumber;
         MonthlyIncome = monthlyIncome;
         Score = score;
         CreatedAt = DateTime.UtcNow;
@@ -33,14 +31,13 @@ public sealed class Proposal
     public static Proposal Create(
         Guid clientId,
         string clientName,
-        string clientDocumentNumber,
         decimal monthlyIncome,
         int score)
     {
-        return new Proposal(clientId, clientName, clientDocumentNumber, monthlyIncome, score);
+        return new Proposal(clientId, clientName, monthlyIncome, score);
     }
 
-    // Métodos internos é usado pelas policies (servicos de domínio):
+    // Método interno usado pelas policies (servicos de domínio)
     internal void Approve(decimal limit, int cards)
     {
         EvaluationDate = DateTime.UtcNow;
@@ -50,6 +47,7 @@ public sealed class Proposal
         RejectionReason = null;
     }
 
+    // Método interno usado pelas policies (servicos de domínio)
     internal void Reject(string reason)
     {
         EvaluationDate = DateTime.UtcNow;

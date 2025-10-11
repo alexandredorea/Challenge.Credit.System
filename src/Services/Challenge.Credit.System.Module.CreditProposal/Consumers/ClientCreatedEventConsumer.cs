@@ -24,6 +24,6 @@ internal sealed class ClientCreatedEventConsumer(
 
         await proposalService.HandleAsync(evento, cancellationToken);
 
-        logger.LogDebug("Evento de proposta aprovada processado com sucesso para PropostaId: {PropostaId}", evento.Id);
+        logger.LogDebug("Evento de proposta aprovada processado com sucesso para PropostaId: {PropostaId}", evento.ClientId);
     }
 }

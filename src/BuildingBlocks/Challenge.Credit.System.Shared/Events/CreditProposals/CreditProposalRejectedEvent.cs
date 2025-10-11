@@ -1,10 +1,9 @@
 ﻿namespace Challenge.Credit.System.Shared.Events.CreditProposals;
 
 public sealed record CreditProposalRejectedEvent(
-    Guid Id,
+    Guid ProposalId,
     Guid ClientId,
     string ClientName,
-    string ClientDocumentNumber,
     int Score,
     string RejectionReason,
     DateTime RejectionDate);

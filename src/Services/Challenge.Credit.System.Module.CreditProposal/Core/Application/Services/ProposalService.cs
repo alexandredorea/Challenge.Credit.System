@@ -15,7 +15,7 @@ public interface IProposalService
     //TODO: adicionar metodos Onter Por Id, Obter Propostas por Cliente, Listar todas as proposta
 }
 
-public sealed class ProposalService(
+internal sealed class ProposalService(
     IProposalDbContext context,
     IScoreCalculator scoreCalculator,
     IScoreEvaluator scoreEvaluator,
@@ -25,9 +25,8 @@ public sealed class ProposalService(
     {
         var score = scoreCalculator.Calculate(@event.MonthlyIncome, new DateBirth(@event.DateBirth));
         var proposal = Proposal.Create(
-            clientId: @event.Id,
-            clientName: @event.Name,
-            clientDocumentNumber: @event.DocumentNumber,
+            clientId: @event.ClientId,
+            clientName: @event.ClientName,
             monthlyIncome: @event.MonthlyIncome,
             score: score);
 
@@ -40,29 +39,15 @@ public sealed class ProposalService(
         if (proposal.Status == StatusProposal.Approved)
         {
             var proposalApproved = new CreditProposalApprovedEvent(
-                Id: proposal.Id,
+                ProposalId: proposal.Id,
                 ClientId: proposal.ClientId,
                 ClientName: proposal.ClientName,
-                ClientDocumentNumber: proposal.ClientDocumentNumber,
                 Score: proposal.Score,
                 AvaliableLimit: proposal.AvaliableLimit,
                 CardsAllowed: proposal.CardsAllowed,
                 ApprovalDate: proposal.EvaluationDate);
 
             await messagePublisher.PublishAsync("proposta.aprovada", proposalApproved, cancellationToken);
-        }
-        else
-        {
-            var proposalRejected = new CreditProposalRejectedEvent(
-                Id: proposal.Id,
-                ClientId: proposal.ClientId,
-                ClientName: proposal.ClientName,
-                ClientDocumentNumber: proposal.ClientDocumentNumber,
-                Score: proposal.Score,
-                proposal.RejectionReason!,
-                proposal.EvaluationDate);
-
-            await messagePublisher.PublishAsync("proposta.reprovada", proposalRejected, cancellationToken);
         }
     }
 }

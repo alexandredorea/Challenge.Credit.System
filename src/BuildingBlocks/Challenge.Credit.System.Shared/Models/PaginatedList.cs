@@ -2,7 +2,7 @@
 
 using Microsoft.EntityFrameworkCore;
 
-public class PaginatedList<T>(IReadOnlyCollection<T> items, int count, int pageNumber, int pageSize)
+public sealed class PaginatedList<T>(IReadOnlyCollection<T> items, int count, int pageNumber, int pageSize)
 {
     public IReadOnlyCollection<T> Items { get; } = items;
     public int PageNumber { get; } = pageNumber;

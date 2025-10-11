@@ -53,12 +53,8 @@ internal sealed class ClientService(
         var @event = new ClientCreatedEvent(
             client.Id,
             client.Name,
-            client.Document.Number,
-            client.Email,
             client.MonthlyIncome,
-            client.Telephone,
-            client.DateBirth,
-            client.CreatedAt);
+            client.DateBirth);
 
         await messagePublisher.PublishAsync(queueName: "cliente.cadastrado", message: @event, cancellationToken: cancellationToken);
 
