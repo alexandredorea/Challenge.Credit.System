@@ -6,10 +6,12 @@ public sealed class DateBirth
 
     public DateBirth(DateTime value)
     {
-        if (value > DateTime.UtcNow)
+        var dateOnly = value.Date;
+
+        if (dateOnly > DateTime.Today)
             throw new ArgumentException("Data de nascimento inválida");
 
-        Value = value;
+        Value = dateOnly;
     }
 
     public int GetAge()
@@ -22,4 +24,6 @@ public sealed class DateBirth
 
         return age;
     }
+
+    public override string ToString() => Value.ToString("dd/MM/yyyy");
 }

@@ -31,7 +31,7 @@ internal sealed class ClientService(
 
     public async Task<ClientResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await context.Clients.FindAsync(new object[] { id }, cancellationToken);
+        return await context.Clients.FindAsync([id], cancellationToken);
     }
 
     public async Task<ClientResponse?> CreateAsync(CreateClientRequest request, CancellationToken cancellationToken = default)

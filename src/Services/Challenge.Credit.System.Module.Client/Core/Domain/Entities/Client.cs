@@ -1,19 +1,20 @@
-namespace Challenge.Credit.System.Module.Client.Core.Domain.Entities;
-
 using Challenge.Credit.System.Module.Client.Core.Domain.ValueObjects;
+
+namespace Challenge.Credit.System.Module.Client.Core.Domain.Entities;
 
 public sealed class Client
 {
     public Guid Id { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public Document Document { get; private set; } = default!;
-    public string Email { get; private set; } = string.Empty;
+    public string Email { get; private set; } = string.Empty; //TODO: adicionar value object para validar email, caso as validacoes anteriores passem
     public string Telephone { get; private set; } = string.Empty;
     public DateTime DateBirth { get; private set; }
     public decimal MonthlyIncome { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
-    private Client() { }
+    private Client()
+    { }
 
     private Client(
         string name,
@@ -53,5 +54,3 @@ public sealed class Client
         return client;
     }
 }
-
-

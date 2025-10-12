@@ -13,7 +13,6 @@ public sealed class Document
 
     public static Document Create(string value)
     {
-
         var digits = new string(value.Where(char.IsDigit).ToArray());
 
         if (digits.Length == 11)

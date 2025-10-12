@@ -6,6 +6,12 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <!-- Permitir que o projeto de testes veja classes internal -->
+  <ItemGroup>
+  	<InternalsVisibleTo Include="Challenge.Credit.System.Module.CreditCard.Tests" />
+  	<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+  </ItemGroup>
+
   <ItemGroup>
     <Folder Include="Core\Application\DataTransferObjects\" />
   </ItemGroup>
