@@ -17,7 +17,14 @@ public static class DependencyInjections
         builder.Services.AddSingleton<IMessagePublisher>(sp =>
         {
             var logger = sp.GetRequiredService<ILogger<RabbitMqPublisher>>();
-            return new RabbitMqPublisher(hostName, logger);
+            var publisher = new RabbitMqPublisher(logger, hostName);
+
+            // TODO: refazer o registro dos bindings conhecidos para ser dinamico para atender os consumers registrados
+            publisher.RegisterBinding("cliente.cadastrado", "credit-system", "cliente.cadastrado");
+            publisher.RegisterBinding("proposta.aprovada", "credit-system", "proposta.aprovada");
+            publisher.RegisterBinding("proposta.rejeitada", "credit-system", "proposta.rejeitada");
+
+            return publisher;
         });
 
         // Registrar o serviço de inicialização da mensageria

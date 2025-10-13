@@ -19,7 +19,7 @@ internal sealed class ProposalDbContext(DbContextOptions<ProposalDbContext> opti
             entity.Property(e => e.ClientName).IsRequired().HasMaxLength(200);
             entity.Property(e => e.MonthlyIncome).HasPrecision(18, 2);
             entity.Property(e => e.AvaliableLimit).HasPrecision(18, 2);
-            entity.Property(e => e.Status).HasConversion<int>();
+            entity.Property(e => e.Status).HasConversion<string>();
 
             entity.HasIndex(e => e.ClientId);
             entity.HasIndex(e => e.Status);

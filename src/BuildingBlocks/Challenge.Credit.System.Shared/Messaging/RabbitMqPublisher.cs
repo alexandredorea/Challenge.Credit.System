@@ -8,23 +8,25 @@ using RabbitMQ.Client;
 
 namespace Challenge.Credit.System.Shared.Messaging;
 
-internal sealed class RabbitMqPublisher : IMessagePublisher, IAsyncInitializable, IAsyncDisposable
+public sealed class RabbitMqPublisher : IMessagePublisher, IAsyncInitializable, IAsyncDisposable
 {
-    private readonly AsyncRetryPolicy _connectionRetryPolicy;
     private readonly string _exchangeName;
     private readonly string _hostName;
     private readonly ILogger<RabbitMqPublisher> _logger;
-    private readonly AsyncRetryPolicy _publishRetryPolicy;
     private IChannel? _channel;
     private IConnection? _connection;
+    private readonly AsyncRetryPolicy _connectionRetryPolicy;
+    private readonly AsyncRetryPolicy _publishRetryPolicy;
+
+    private readonly List<(string queueName, string exchangeName, string routingKey)> _knownBindings = [];
 
     public RabbitMqPublisher(
-        string hostName,
         ILogger<RabbitMqPublisher> logger,
+        string hostName,
         string exchangeName = "credit-system")
     {
-        _hostName = hostName ?? throw new ArgumentNullException(nameof(hostName));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _hostName = hostName;
+        _logger = logger;
         _exchangeName = exchangeName;
 
         // Política de retry para a conexão inicial
@@ -32,6 +34,11 @@ internal sealed class RabbitMqPublisher : IMessagePublisher, IAsyncInitializable
 
         // Política de retry para a publicação de mensagens
         _publishRetryPolicy = ResiliencePolicies.CreateMessagingRetryPolicy(_logger);
+    }
+
+    public void RegisterBinding(string queueName, string exchangeName, string routingKey)
+    {
+        _knownBindings.Add((queueName, exchangeName, routingKey));
     }
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
@@ -52,10 +59,42 @@ internal sealed class RabbitMqPublisher : IMessagePublisher, IAsyncInitializable
             _connection = await factory.CreateConnectionAsync(_cancellationToken);
             _channel = await _connection.CreateChannelAsync(cancellationToken: _cancellationToken);
 
-            await _channel.ExchangeDeclareAsync(exchange: _exchangeName, type: ExchangeType.Topic, durable: true, autoDelete: false, cancellationToken: _cancellationToken);
+            await SetupTopologyAsync(_channel, cancellationToken);
 
             _logger.LogInformation("Publisher resiliente criado para exchange: {ExchangeName}", _exchangeName);
         }, cancellationToken);
+    }
+
+    private async Task SetupTopologyAsync(IChannel channel, CancellationToken stoppingToken)
+    {
+        foreach (var (queueName, exchangeName, routingKey) in _knownBindings)
+        {
+            // Nomes para DLX e DLQ
+            var dlxName = $"{exchangeName}.dlx";
+            var dlqName = $"{queueName}.dlq";
+
+            // Declarar Dead Letter Exchange
+            await channel.ExchangeDeclareAsync(exchange: dlxName, type: ExchangeType.Direct, durable: true, cancellationToken: stoppingToken);
+            // Declarar Dead Letter Queue
+            await channel.QueueDeclareAsync(queue: dlqName, durable: true, exclusive: false, autoDelete: false, cancellationToken: stoppingToken);
+            // Bind DLQ ao DLX
+            await channel.QueueBindAsync(queue: dlqName, exchange: dlxName, routingKey: dlqName, cancellationToken: stoppingToken);
+            // Declarar exchange principal
+            await channel.ExchangeDeclareAsync(exchange: exchangeName, type: ExchangeType.Topic, durable: true, cancellationToken: stoppingToken);
+
+            // Declarar fila principal com DLX configurado
+            var arguments = new Dictionary<string, object?>
+            {
+                { "x-dead-letter-exchange", dlxName },
+                { "x-dead-letter-routing-key", dlqName }
+            };
+            await channel.QueueDeclareAsync(queueName, durable: true, exclusive: false, autoDelete: false, arguments, cancellationToken: stoppingToken);
+
+            // Bind da fila principal à exchange principal
+            await channel.QueueBindAsync(queue: queueName, exchange: exchangeName, routingKey: routingKey, cancellationToken: stoppingToken);
+
+            _logger.LogDebug("Fila '{QueueName}' e binding para exchange '{ExchangeName}' com routing key '{RoutingKey}' configurados.", queueName, exchangeName, routingKey);
+        }
     }
 
     public async Task PublishAsync<T>(string routingKey, T message, CancellationToken cancellationToken = default)

@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Challenge.Credit.System.Module.CreditCard.Consumers;
 
-public sealed class CreditProposalApprovedEventConsumer(
+internal sealed class CreditProposalApprovedEventConsumer(
     ICardService cardService,
     ILogger<CreditProposalApprovedEventConsumer> logger) : IMessageConsumer
 {

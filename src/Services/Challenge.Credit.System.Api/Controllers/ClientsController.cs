@@ -14,7 +14,7 @@ public sealed class ClientsController(IClientService clienteService) : Controlle
 {
     [HttpGet]
     [ProducesResponseType(typeof(ApiResult<IEnumerable<ClientResponse>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAllAsync(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
         var client = await clienteService.GetAllAsync(cancellationToken);
         return Ok(ApiResult<IEnumerable<ClientResponse?>>.SuccessResult(client));
@@ -23,7 +23,7 @@ public sealed class ClientsController(IClientService clienteService) : Controlle
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(ApiResult<ClientResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResult<ClientResponse>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var client = await clienteService.GetByIdAsync(id, cancellationToken);
 
@@ -53,7 +53,7 @@ public sealed class ClientsController(IClientService clienteService) : Controlle
             return Conflict(ApiResult<ClientResponse>.FailureResult("CPF ou Email já cadastrado.", "DUPLICATE_ENTRY"));
 
         return CreatedAtAction(
-            actionName: nameof(GetByIdAsync),
+            actionName: nameof(GetById),
             routeValues: new { id = result.Id },
             value: ApiResult<ClientResponse>.SuccessResult(result, "Cliente cadastrado com sucesso."));
     }

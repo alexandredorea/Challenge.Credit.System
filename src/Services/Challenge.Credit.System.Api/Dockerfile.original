@@ -1,6 +1,6 @@
 # See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
-# Estágio de base para gerar a imagem
+# This stage is used when running from VS in fast mode (Default for Debug configuration)
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 USER $APP_UID
 WORKDIR /app
@@ -8,32 +8,22 @@ EXPOSE 8080
 EXPOSE 8081
 
 
-# Estágio de build
+# This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-
-# Copiar arquivos de projeto e restaurar dependências
 COPY ["src/Services/Challenge.Credit.System.Api/Challenge.Credit.System.Api.csproj", "src/Services/Challenge.Credit.System.Api/"]
-COPY ["src/Services/Challenge.Credit.System.Module.Client/Challenge.Credit.System.Module.Client.csproj", "src/Services/Challenge.Credit.System.Module.Client/"]
-COPY ["src/Services/Challenge.Credit.System.Module.CreditCard/Challenge.Credit.System.Module.CreditCard.csproj", "src/Services/Challenge.Credit.System.Module.CreditCard/"]
-COPY ["src/Services/Challenge.Credit.System.Module.CreditProposal/Challenge.Credit.System.Module.CreditProposal.csproj", "src/Services/Challenge.Credit.System.Module.CreditProposal/"]
-COPY ["src/BuildingBlocks/Challenge.Credit.System.Shared/Challenge.Credit.System.Shared.csproj", "src/BuildingBlocks/Challenge.Credit.System.Shared/"]
-
 RUN dotnet restore "./src/Services/Challenge.Credit.System.Api/Challenge.Credit.System.Api.csproj"
-
 COPY . .
-
-# Build da aplicação
 WORKDIR "/src/src/Services/Challenge.Credit.System.Api"
 RUN dotnet build "./Challenge.Credit.System.Api.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
-# Publicar a aplicação
+# This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "./Challenge.Credit.System.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
-# Estágio final - runtime
+# This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .

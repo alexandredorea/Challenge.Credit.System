@@ -2,8 +2,11 @@
 
 public sealed class Document
 {
-    public string Number { get; }
+    public string Number { get; } = string.Empty;
     public DocumentType Type { get; }
+
+    private Document()
+    { }
 
     private Document(string value, DocumentType type)
     {

@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Challenge.Credit.System.Module.Client.Infrastructure.Data;
 
-internal sealed class ClientDbContext(DbContextOptions<ClientDbContext> options)
+public sealed class ClientDbContext(DbContextOptions<ClientDbContext> options)
     : DbContext(options), IClientDbContext
 {
     public DbSet<Core.Domain.Entities.Client> Clients => Set<Core.Domain.Entities.Client>();
@@ -18,26 +18,31 @@ internal sealed class ClientDbContext(DbContextOptions<ClientDbContext> options)
 
             entity.Property(e => e.Name).IsRequired().HasMaxLength(200).IsUnicode(false);
 
-            entity.ComplexProperty(c => c.Document, document =>
+            entity.OwnsOne(c => c.Document, doc =>
             {
-                document.Property(d => d.Number)
+                doc.Property(d => d.Number)
                     .HasColumnName("DocumentNumber")
                     .IsRequired()
-                    .HasMaxLength(14).IsUnicode(false);
+                    .HasMaxLength(14)
+                    .IsUnicode(false);
 
-                document.Property(d => d.Type)
+                doc.Property(d => d.Type)
                     .HasColumnName("DocumentType")
                     .IsRequired()
                     .HasMaxLength(5)
-                    .HasConversion<string>().IsUnicode(false);
+                    .HasConversion<string>()
+                    .IsUnicode(false);
+
+                doc.HasIndex(x => x.Number)
+                    .IsUnique()
+                    .HasDatabaseName("IX_Clients_DocumentNumber");
             });
 
-            entity.Property(e => e.Email).IsRequired().HasMaxLength(254).IsUnicode(false); //RFC 3696, section-3
+            entity.Property(e => e.Email).IsRequired().HasMaxLength(254).IsUnicode(false);
             entity.Property(e => e.Telephone).IsRequired().HasMaxLength(11).IsUnicode(false);
             entity.Property(e => e.MonthlyIncome).HasPrecision(18, 2).IsUnicode(false);
 
             entity.HasIndex(e => e.Email).IsUnique().HasDatabaseName("IX_Clients_Email");
-            entity.HasIndex("DocumentNumber").IsUnique().HasDatabaseName("IX_Clients_DocumentNumber");
         });
     }
 }
