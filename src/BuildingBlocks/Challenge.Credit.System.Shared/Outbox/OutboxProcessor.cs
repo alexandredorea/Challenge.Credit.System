@@ -18,7 +18,6 @@ public sealed class OutboxProcessor<TDbContext> : BackgroundService
     private const int MaxRetryAttempts = 5;
     private const int ProcessingIntervalSeconds = 5;
     private const int BatchSize = 100;
-    private const int LockTimeoutSeconds = 30;
 
     public OutboxProcessor(
         ILogger<OutboxProcessor<TDbContext>> logger,
@@ -64,11 +63,9 @@ public sealed class OutboxProcessor<TDbContext> : BackgroundService
         using var scope = _scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<TDbContext>();
         var publisher = scope.ServiceProvider.GetRequiredService<IMessagePublisher>();
-        //var cutoffTime = DateTime.UtcNow.AddSeconds(-LockTimeoutSeconds);
 
         var pendingEvent = await context.Set<OutboxEvent>()
-            //.Where(e => !e.Processed && e.RetryCount < MaxRetryAttempts)
-            //.Where(e => e.ProcessedAt == null || e.ProcessedAt < cutoffTime)
+            .Where(e => !e.Processed && e.RetryCount < MaxRetryAttempts)
             .OrderBy(e => e.CreatedAt)
             .Take(BatchSize)
             .ToListAsync(cancellationToken);
@@ -84,6 +81,7 @@ public sealed class OutboxProcessor<TDbContext> : BackgroundService
         {
             if (cancellationToken.IsCancellationRequested)
                 break;
+
             await ProcessSingleEventAsync(publisher, @event, cancellationToken);
         }
 

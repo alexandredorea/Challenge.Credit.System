@@ -27,7 +27,7 @@ public static class DependencyInjections
 
     private static void AddDatabase(this IHostApplicationBuilder builder)
     {
-        builder.Services.AddDbContext<ProposalDbContext>(options => options.UseInMemoryDatabase($"ProposalDb_{Guid.NewGuid}"));
+        builder.Services.AddDbContext<ProposalDbContext>(options => options.UseInMemoryDatabase($"ProposalDb"));
         builder.Services.AddScoped<IProposalDbContext>(provider => provider.GetRequiredService<ProposalDbContext>());
     }
 

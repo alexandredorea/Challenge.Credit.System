@@ -57,6 +57,11 @@ public sealed class Proposal
         RejectionReason = reason;
     }
 
+    internal bool IsApproved()
+    {
+        return Status == StatusProposal.Approved;
+    }
+
     //private void CalculateScore(DateBirth dateBirth)
     //{
     //int score = 0;

@@ -37,7 +37,7 @@ internal sealed class ProposalService(
 
         context.Proposals.Add(proposal);
 
-        if (proposal.Status == StatusProposal.Approved)
+        if (proposal.IsApproved())
         {
             var proposalApproved = new CreditProposalApprovedEvent(
                 ProposalId: proposal.Id,

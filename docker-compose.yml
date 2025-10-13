@@ -4,14 +4,6 @@ services:
     image: rabbitmq:3.13-management-alpine
     container_name: challenge-rabbitmq
     hostname: rabbitmq
-    ports:
-      - "5672:5672"   # AMQP protocol
-      - "15672:15672" # Management UI
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - challenge-network
     healthcheck:
@@ -20,21 +12,27 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    restart: unless-stopped
     
-  # # API
-  # api:
-  #   build:
-  #     context: .
-  #     dockerfile: src/Services/Challenge.Credit.System.Api/Dockerfile
-  #   container_name: challenge-api
-  #   networks:
-  #     - challenge-network
-  #   restart: unless-stopped
+  # API - Sistema de Crédito
+  api:
+    build:
+      context: .
+      dockerfile: src/Services/Challenge.Credit.System.Api/Dockerfile
+    container_name: challenge-api
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - challenge-network
+    restart: unless-stopped
 
 networks:
   challenge-network:
     driver: bridge
+    name: challenge-network
 
 volumes:
   rabbitmq_data:
     driver: local
+    name: challenge-rabbitmq-data

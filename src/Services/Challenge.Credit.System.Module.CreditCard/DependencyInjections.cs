@@ -23,7 +23,7 @@ public static class DependencyInjections
 
     private static void AddDatabase(this IHostApplicationBuilder builder)
     {
-        builder.Services.AddDbContext<CardDbContext>(options => options.UseInMemoryDatabase($"CardDb_{Guid.NewGuid}"));
+        builder.Services.AddDbContext<CardDbContext>(options => options.UseInMemoryDatabase($"CardDb"));
         builder.Services.AddScoped<ICardDbContext>(provider => provider.GetRequiredService<CardDbContext>());
     }
 
