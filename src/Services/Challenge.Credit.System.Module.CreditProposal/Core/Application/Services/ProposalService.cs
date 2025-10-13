@@ -4,7 +4,7 @@ using Challenge.Credit.System.Module.CreditProposal.Core.Domain.Interfaces;
 using Challenge.Credit.System.Module.CreditProposal.Core.Domain.ValueObjects;
 using Challenge.Credit.System.Shared.Events.Clients;
 using Challenge.Credit.System.Shared.Events.CreditProposals;
-using Challenge.Credit.System.Shared.Messaging.Interfaces;
+using Challenge.Credit.System.Shared.Outbox;
 
 namespace Challenge.Credit.System.Module.CreditProposal.Core.Application.Services;
 
@@ -19,11 +19,14 @@ internal sealed class ProposalService(
     IProposalDbContext context,
     IScoreCalculator scoreCalculator,
     IScoreEvaluator scoreEvaluator,
-    IMessagePublisher messagePublisher) : IProposalService
+    IOutboxService outboxService) : IProposalService
 {
     public async Task HandleAsync(ClientCreatedEvent @event, CancellationToken cancellationToken = default)
     {
-        var score = scoreCalculator.Calculate(@event.MonthlyIncome, new DateBirth(@event.DateBirth));
+        var score = scoreCalculator.Calculate(
+            @event.MonthlyIncome,
+            new DateBirth(@event.DateBirth));
+
         var proposal = Proposal.Create(
             clientId: @event.ClientId,
             clientName: @event.ClientName,
@@ -32,10 +35,8 @@ internal sealed class ProposalService(
 
         scoreEvaluator.Evaluate(proposal);
 
-        await context.Proposals.AddAsync(proposal, cancellationToken);
-        await context.SaveChangesAsync(cancellationToken);
+        context.Proposals.Add(proposal);
 
-        // TODO: Usar Domain Events, Factory ou ja implementar direto Outbox Pattern (SAGA) para evitar salvar o proposta e nao gerar cartao em caso do rabbit estar fora do ar?
         if (proposal.Status == StatusProposal.Approved)
         {
             var proposalApproved = new CreditProposalApprovedEvent(
@@ -46,8 +47,9 @@ internal sealed class ProposalService(
                 AvaliableLimit: proposal.AvaliableLimit,
                 CardsAllowed: proposal.CardsAllowed,
                 ApprovalDate: proposal.EvaluationDate);
-
-            await messagePublisher.PublishAsync("proposta.aprovada", proposalApproved, cancellationToken);
+            outboxService.AddEvent(proposalApproved);
         }
+
+        await context.SaveChangesAsync(cancellationToken);
     }
 }

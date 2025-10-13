@@ -2,6 +2,7 @@
 using Challenge.Credit.System.Module.CreditCard.Core.Application.Interfaces;
 using Challenge.Credit.System.Module.CreditCard.Core.Application.Services;
 using Challenge.Credit.System.Module.CreditCard.Infrastructure.Data;
+using Challenge.Credit.System.Shared.Events.CreditProposals;
 using Challenge.Credit.System.Shared.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
@@ -22,7 +23,7 @@ public static class DependencyInjections
 
     private static void AddDatabase(this IHostApplicationBuilder builder)
     {
-        builder.Services.AddDbContext<CardDbContext>(options => options.UseInMemoryDatabase("CartaoDb"));
+        builder.Services.AddDbContext<CardDbContext>(options => options.UseInMemoryDatabase($"CardDb_{Guid.NewGuid}"));
         builder.Services.AddScoped<ICardDbContext>(provider => provider.GetRequiredService<CardDbContext>());
     }
 
@@ -38,8 +39,8 @@ public static class DependencyInjections
 
         var hostName = builder.Configuration["RabbitMq:HostName"] ?? "localhost";
         var exchangeName = builder.Configuration["RabbitMq:ExchangeName"] ?? "credit-system";
-        var queueName = builder.Configuration["RabbitMq:QueueName"] ?? "proposta.aprovada";
-        var routingKey = builder.Configuration["RabbitMq:RoutingKey"] ?? "proposta.aprovada";
+        var queueName = builder.Configuration["RabbitMq:QueueName"] ?? nameof(CreditProposalApprovedEvent);
+        var routingKey = builder.Configuration["RabbitMq:RoutingKey"] ?? nameof(CreditProposalApprovedEvent);
         builder.Services.AddSingleton<IHostedService>(sp =>
         {
             var logger = sp.GetRequiredService<ILogger<RabbitMqConsumer>>();

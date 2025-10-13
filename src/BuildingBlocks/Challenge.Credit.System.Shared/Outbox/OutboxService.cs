@@ -1,21 +1,28 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Challenge.Credit.System.Shared.Outbox;
 
-public class OutboxService<TDbContext>(TDbContext context) : IOutboxService where TDbContext : DbContext
+public interface IOutboxService
 {
-    public void AddEvent(string eventType, string payload)
-    {
-        var outboxEvent = new OutboxEvent
-        {
-            Id = Guid.NewGuid(),
-            EventType = eventType,
-            Payload = payload,
-            CreatedAt = DateTime.UtcNow,
-            Processed = false,
-            RetryCount = 0
-        };
+    void AddEvent<T>(T @event) where T : class;
+}
 
+public sealed class OutboxService<TDbContext>(
+    ILogger<OutboxService<TDbContext>> logger,
+    TDbContext context)
+    : IOutboxService where TDbContext : DbContext
+{
+    public void AddEvent<T>(T @event) where T : class
+    {
+        ArgumentNullException.ThrowIfNull(@event);
+
+        var outboxEvent = OutboxEvent.Create(@event);
         context.Set<OutboxEvent>().Add(outboxEvent);
+
+        logger.LogDebug(
+            "Outbox event added: {EventType} with ID {EventId}",
+            @event,
+            outboxEvent.Id);
     }
 }

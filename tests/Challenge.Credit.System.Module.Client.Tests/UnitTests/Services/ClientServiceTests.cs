@@ -3,8 +3,7 @@ using Challenge.Credit.System.Module.Client.Core.Application.Interfaces;
 using Challenge.Credit.System.Module.Client.Core.Application.Services;
 using Challenge.Credit.System.Module.Client.Tests.Configurations.Builders;
 using Challenge.Credit.System.Module.Client.Tests.Configurations.Helpers;
-using Challenge.Credit.System.Shared.Events.Clients;
-using Challenge.Credit.System.Shared.Messaging.Interfaces;
+using Challenge.Credit.System.Shared.Outbox;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using NSubstitute;
@@ -15,16 +14,18 @@ namespace Challenge.Credit.System.Module.Client.Tests.UnitTests.Services;
 public sealed class ClientServiceTests
 {
     private readonly IClientDbContext _context;
-    private readonly IMessagePublisher _messagePublisher;
-    private DbSet<Core.Domain.Entities.Client> _dbSet;
+    private readonly IOutboxService _outboxService;
+    private DbSet<Core.Domain.Entities.Client> _dbSetClient;
+    private DbSet<OutboxEvent> _dbSetOutbox;
     private readonly ClientService _sut; // System Under Test
 
     public ClientServiceTests()
     {
-        _dbSet = Substitute.For<DbSet<Core.Domain.Entities.Client>, IQueryable<Core.Domain.Entities.Client>, IAsyncEnumerable<Core.Domain.Entities.Client>>();
+        _dbSetClient = Substitute.For<DbSet<Core.Domain.Entities.Client>, IQueryable<Core.Domain.Entities.Client>, IAsyncEnumerable<Core.Domain.Entities.Client>>();
+        _dbSetOutbox = Substitute.For<DbSet<OutboxEvent>, IQueryable<OutboxEvent>, IAsyncEnumerable<OutboxEvent>>();
         _context = Substitute.For<IClientDbContext>();
-        _messagePublisher = Substitute.For<IMessagePublisher>();
-        _sut = new ClientService(_context, _messagePublisher);
+        _outboxService = Substitute.For<IOutboxService>();
+        _sut = new ClientService(_context, _outboxService);
     }
 
     #region GetAllAsync Tests
@@ -51,8 +52,8 @@ public sealed class ClientServiceTests
             .Build()
         };
 
-        _dbSet = CreateMockDbSet(clients.OrderByDescending(c => c.CreatedAt).ToList());
-        _context.Clients.Returns(_dbSet);
+        _dbSetClient = CreateMockDbSet(clients.OrderByDescending(c => c.CreatedAt).ToList());
+        _context.Clients.Returns(_dbSetClient);
 
         // Act
         var result = await _sut.GetAllAsync();
@@ -69,9 +70,9 @@ public sealed class ClientServiceTests
     {
         // Arrange
         var emptyList = new List<Core.Domain.Entities.Client>();
-        _dbSet = CreateMockDbSet(emptyList);
+        _dbSetClient = CreateMockDbSet(emptyList);
 
-        _context.Clients.Returns(_dbSet);
+        _context.Clients.Returns(_dbSetClient);
 
         // Act
         var result = await _sut.GetAllAsync();
@@ -92,8 +93,8 @@ public sealed class ClientServiceTests
         var clientId = Guid.NewGuid();
         var expected = new ClientBuilder().Build();
 
-        _dbSet.FindAsync(Arg.Any<object[]>(), Arg.Any<CancellationToken>()).Returns(expected);
-        _context.Clients.Returns(_dbSet);
+        _dbSetClient.FindAsync(Arg.Any<object[]>(), Arg.Any<CancellationToken>()).Returns(expected);
+        _context.Clients.Returns(_dbSetClient);
 
         // Act
         var result = await _sut.GetByIdAsync(clientId);
@@ -110,8 +111,8 @@ public sealed class ClientServiceTests
     {
         // Arrange
         var expected = ValueTask.FromResult<Core.Domain.Entities.Client?>(null);
-        _dbSet.FindAsync(Arg.Any<object[]>(), Arg.Any<CancellationToken>()).Returns(expected);
-        _context.Clients.Returns(_dbSet);
+        _dbSetClient.FindAsync(Arg.Any<object[]>(), Arg.Any<CancellationToken>()).Returns(expected);
+        _context.Clients.Returns(_dbSetClient);
 
         // Act
         var result = await _sut.GetByIdAsync(Guid.NewGuid());
@@ -130,9 +131,11 @@ public sealed class ClientServiceTests
         // Arrange
         var request = new CreateClientRequestBuilder().Build();
         var clients = new List<Core.Domain.Entities.Client>();
+        var outboxes = new List<OutboxEvent>();
 
-        SetupQueryable(_dbSet, clients);
-        _context.Clients.Returns(_dbSet);
+        SetupQueryable(_dbSetClient, clients);
+        SetupQueryable(_dbSetOutbox, outboxes);
+        _context.Clients.Returns(_dbSetClient);
         _context.SaveChangesAsync(Arg.Any<CancellationToken>()).Returns(1);
 
         // Act
@@ -142,17 +145,8 @@ public sealed class ClientServiceTests
 
         // Verifica que o cliente foi adicionado e salvo no contexto
         _context.Clients.Received(1).Add(Arg.Any<Core.Domain.Entities.Client>());
+        _context.OutboxEvents.Received(1).Add(Arg.Any<OutboxEvent>());
         await _context.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-
-        // Verifica que o evento foi publicado
-        await _messagePublisher.Received(1).PublishAsync(
-            queueName: "cliente.cadastrado",
-            message: Arg.Is<ClientCreatedEvent>(e =>
-                e.ClientName == request.Name &&
-                e.MonthlyIncome == request.MonthlyIncome
-            ),
-            cancellationToken: Arg.Any<CancellationToken>()
-        );
 
         //Verifica todos os campos se correspondem ao solicitado
         result.Should().NotBeNull();
@@ -176,8 +170,8 @@ public sealed class ClientServiceTests
         var existingClient = new ClientBuilder().WithName("Outro Cliente").WithDocument(document).WithEmail("outro-email@teste.com").Build();
         var clients = new List<Core.Domain.Entities.Client> { existingClient };
 
-        SetupQueryable(_dbSet, clients);
-        _context.Clients.Returns(_dbSet);
+        SetupQueryable(_dbSetClient, clients);
+        _context.Clients.Returns(_dbSetClient);
 
         // Act
         var result = await _sut.CreateAsync(request);
@@ -187,14 +181,8 @@ public sealed class ClientServiceTests
 
         // Verifica que nao adicionado e nao salvo no contexto
         _context.Clients.DidNotReceive().Add(Arg.Any<Core.Domain.Entities.Client>());
+        _context.OutboxEvents.DidNotReceive().Add(Arg.Any<OutboxEvent>());
         await _context.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
-
-        // Verifica que não publicou evento
-        await _messagePublisher.DidNotReceive().PublishAsync(
-            Arg.Any<string>(),
-            Arg.Any<ClientCreatedEvent>(),
-            Arg.Any<CancellationToken>()
-        );
     }
 
     [Fact]
@@ -206,8 +194,8 @@ public sealed class ClientServiceTests
         var existingClient = new ClientBuilder().WithName("Outro Cliente").WithEmail(email).WithDocument("98765432100").Build();
         var clients = new List<Core.Domain.Entities.Client> { existingClient };
 
-        SetupQueryable(_dbSet, clients);
-        _context.Clients.Returns(_dbSet);
+        SetupQueryable(_dbSetClient, clients);
+        _context.Clients.Returns(_dbSetClient);
 
         // Act
         var result = await _sut.CreateAsync(request);
@@ -215,12 +203,8 @@ public sealed class ClientServiceTests
         // Assert
         result.Should().BeNull();
         _context.Clients.DidNotReceive().Add(Arg.Any<Core.Domain.Entities.Client>());
+        _context.OutboxEvents.DidNotReceive().Add(Arg.Any<OutboxEvent>());
         await _context.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
-        await _messagePublisher.DidNotReceive().PublishAsync(
-            Arg.Any<string>(),
-            Arg.Any<ClientCreatedEvent>(),
-            Arg.Any<CancellationToken>()
-        );
     }
 
     [Fact]
@@ -230,19 +214,12 @@ public sealed class ClientServiceTests
         var request = new CreateClientRequestBuilder().Build();
         var clients = new List<Core.Domain.Entities.Client>();
 
-        SetupQueryable(_dbSet, clients);
-        _context.Clients.Returns(_dbSet);
+        SetupQueryable(_dbSetClient, clients);
+        _context.Clients.Returns(_dbSetClient);
         _context.SaveChangesAsync(Arg.Any<CancellationToken>()).Throws(new DbUpdateException("Database error"));
 
         // Act & Assert
         await Assert.ThrowsAsync<DbUpdateException>(async () => await _sut.CreateAsync(request));
-
-        // Verificar que não publicou evento após falha
-        await _messagePublisher.DidNotReceive().PublishAsync(
-            Arg.Any<string>(),
-            Arg.Any<ClientCreatedEvent>(),
-            Arg.Any<CancellationToken>()
-        );
     }
 
     //[Fact] //TODO: refatorar a classe de servico,
