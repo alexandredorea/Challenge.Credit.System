@@ -121,6 +121,9 @@ A arquitetura escolhida foi o **Monolito Modular**. Embora a aplicação seja im
 | **Padrão de Resposta da API (Result Pattern)** | Padroniza todas as respostas da API, facilitando o consumo pelo cliente e o tratamento de sucessos e erros de forma consistente. |
 | **Testes Unitários com xUnit, NSubstitute e FluentAssertions** | Fornece uma suíte de testes robusta e legível, garantindo a qualidade e a manutenibilidade do código. |
 
+> [!NOTE]  
+> Para maiores informações [clique aqui](https://github.com/alexandredorea/Challenge.Credit.System/blob/master/docs/DECISOES_ARQUITETURAIS.md).
+
 
 ## 📊 Fluxograma
 
