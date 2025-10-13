@@ -6,14 +6,14 @@ O desafio proposto foi de implementação de um cadastro de clientes, análise d
 
 ## 📋 Índice
 
-- [Sobre o Projeto](#sobre-o-projeto)
-- [Tecnologias Utilizadas](#tecnologias-utilizadas)
-- [Arquitetura](#arquitetura)
-- [Fluxograma](#fluxograma)
-- [Pré-requisitos](#pré-requisitos)
-- [Como Executar](#como-executar)
+- [Sobre o Projeto](#-sobre-o-projeto)
+- [Tecnologias Utilizadas](#%EF%B8%8F-tecnologias-utilizadas)
+- [Arquitetura](#%EF%B8%8F-arquitetura)
+- [Fluxograma](#-fluxograma)
+- [Pré-requisitos](#-pré-requisitos)
+- [Como Executar](#-como-executar)
 - [Endpoints da API](#endpoints-da-api)
-- [Testes](#testes)
+- [Testes](#-testes)
 
 ## 🎯 Sobre o Projeto
 
