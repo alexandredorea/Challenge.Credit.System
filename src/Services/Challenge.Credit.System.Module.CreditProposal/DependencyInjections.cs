@@ -4,7 +4,9 @@ using Challenge.Credit.System.Module.CreditProposal.Core.Application.Services;
 using Challenge.Credit.System.Module.CreditProposal.Core.Domain.Interfaces;
 using Challenge.Credit.System.Module.CreditProposal.Core.Domain.Services;
 using Challenge.Credit.System.Module.CreditProposal.Infrastructure.Data;
+using Challenge.Credit.System.Shared.Events.Clients;
 using Challenge.Credit.System.Shared.Messaging;
+using Challenge.Credit.System.Shared.Outbox;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -17,6 +19,7 @@ public static class DependencyInjections
     {
         builder.AddDatabase();
         builder.AddServices();
+        builder.AddOutboxPattern();
         builder.AddConsumers();
 
         return builder;
@@ -24,7 +27,7 @@ public static class DependencyInjections
 
     private static void AddDatabase(this IHostApplicationBuilder builder)
     {
-        builder.Services.AddDbContext<ProposalDbContext>(options => options.UseInMemoryDatabase("ProposalDb"));
+        builder.Services.AddDbContext<ProposalDbContext>(options => options.UseInMemoryDatabase($"ProposalDb_{Guid.NewGuid}"));
         builder.Services.AddScoped<IProposalDbContext>(provider => provider.GetRequiredService<ProposalDbContext>());
     }
 
@@ -40,15 +43,24 @@ public static class DependencyInjections
         builder.Services.AddScoped<IScorePolicy, HighScorePolicy>();
     }
 
+    private static void AddOutboxPattern(this IHostApplicationBuilder builder)
+    {
+        // Registrar OutboxService
+        builder.Services.AddScoped<IOutboxService, OutboxService<ProposalDbContext>>();
+
+        // Registrar OutboxProcessor como HostedService
+        builder.Services.AddHostedService<OutboxProcessor<ProposalDbContext>>();
+    }
+
     private static void AddConsumers(this IHostApplicationBuilder builder)
     {
         builder.Services.AddScoped<ClientCreatedEventConsumer>();
 
         // Registra o RabbitMqConsumer como HostedService (Worker)
         var hostName = builder.Configuration["RabbitMq:HostName"] ?? "localhost";
-        var exchangeName = builder.Configuration["RabbitMq:ExchangeName"] ?? "credit-system";  // TODO: ajustar o arquivo de configuracao o mesmo exchange do publisher
-        var queueName = builder.Configuration["RabbitMq:QueueName"] ?? "cliente.cadastrado";   // TODO: ajustar o arquivo de configuracao o nome da fila específica
-        var routingKey = builder.Configuration["RabbitMq:RoutingKey"] ?? "cliente.cadastrado"; // TODO: ajustar o arquivo de configuracao a mesma routing key usada no publish
+        var exchangeName = builder.Configuration["RabbitMq:ExchangeName"] ?? "credit-system";        // TODO: ajustar o arquivo de configuracao o mesmo exchange do publisher
+        var queueName = builder.Configuration["RabbitMq:QueueName"] ?? nameof(ClientCreatedEvent);   // TODO: ajustar o arquivo de configuracao o nome da fila específica
+        var routingKey = builder.Configuration["RabbitMq:RoutingKey"] ?? nameof(ClientCreatedEvent); // TODO: ajustar o arquivo de configuracao a mesma routing key usada no publish
 
         // Registrar o RabbitMqConsumer como HostedService (Worker) para consumir a fila 'cliente.cadastrado'
         builder.Services.AddSingleton<IHostedService>(sp =>

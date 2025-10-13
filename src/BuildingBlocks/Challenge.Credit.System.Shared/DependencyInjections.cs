@@ -1,4 +1,6 @@
-﻿using Challenge.Credit.System.Shared.Messaging;
+﻿using Challenge.Credit.System.Shared.Events.Clients;
+using Challenge.Credit.System.Shared.Events.CreditProposals;
+using Challenge.Credit.System.Shared.Messaging;
 using Challenge.Credit.System.Shared.Messaging.Interfaces;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -20,9 +22,9 @@ public static class DependencyInjections
             var publisher = new RabbitMqPublisher(logger, hostName);
 
             // TODO: refazer o registro dos bindings conhecidos para ser dinamico para atender os consumers registrados
-            publisher.RegisterBinding("cliente.cadastrado", "credit-system", "cliente.cadastrado");
-            publisher.RegisterBinding("proposta.aprovada", "credit-system", "proposta.aprovada");
-            publisher.RegisterBinding("proposta.rejeitada", "credit-system", "proposta.rejeitada");
+            publisher.RegisterBinding(nameof(ClientCreatedEvent), "credit-system", nameof(ClientCreatedEvent));
+            publisher.RegisterBinding(nameof(CreditProposalApprovedEvent), "credit-system", nameof(CreditProposalApprovedEvent));
+            publisher.RegisterBinding(nameof(CreditProposalRejectedEvent), "credit-system", nameof(CreditProposalRejectedEvent));
 
             return publisher;
         });

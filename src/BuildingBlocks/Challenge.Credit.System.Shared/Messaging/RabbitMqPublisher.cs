@@ -124,6 +124,45 @@ public sealed class RabbitMqPublisher : IMessagePublisher, IAsyncInitializable, 
         }, cancellationToken);
     }
 
+    public async Task PublishAsync(string routingKey, string payload, CancellationToken cancellationToken = default)
+    {
+        if (_channel == null || !_channel.IsOpen)
+            throw new InvalidOperationException("O publisher não foi inicializado. Chame InitializeAsync primeiro.");
+
+        if (string.IsNullOrWhiteSpace(routingKey))
+            throw new ArgumentException("Routing key cannot be null or empty", nameof(routingKey));
+
+        if (string.IsNullOrWhiteSpace(payload))
+            throw new ArgumentException("Payload cannot be null or empty", nameof(payload));
+
+        var messageBody = Encoding.UTF8.GetBytes(payload);
+
+        await _publishRetryPolicy.ExecuteAsync(async (ct) =>
+        {
+            try
+            {
+                await _channel.BasicPublishAsync(
+                    exchange: _exchangeName,
+                    routingKey: routingKey,
+                    mandatory: true,
+                    body: messageBody,
+                    cancellationToken: ct);
+
+                _logger.LogDebug(
+                    "Mensagem publicada com sucesso para routing key: {RoutingKey}",
+                    routingKey);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Falha ao publicar mensagem para routing key: {RoutingKey}",
+                    routingKey);
+                throw;
+            }
+        }, cancellationToken);
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (_channel is not null)

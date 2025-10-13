@@ -8,14 +8,17 @@ using Polly.Retry;
 
 namespace Challenge.Credit.System.Shared.Outbox;
 
-public class OutboxProcessor<TDbContext> : BackgroundService where TDbContext : DbContext
+public sealed class OutboxProcessor<TDbContext> : BackgroundService
+    where TDbContext : DbContext
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<OutboxProcessor<TDbContext>> _logger;
     private readonly AsyncRetryPolicy _retryPolicy;
+
     private const int MaxRetryAttempts = 5;
     private const int ProcessingIntervalSeconds = 5;
     private const int BatchSize = 100;
+    private const int LockTimeoutSeconds = 30;
 
     public OutboxProcessor(
         ILogger<OutboxProcessor<TDbContext>> logger,
@@ -23,8 +26,7 @@ public class OutboxProcessor<TDbContext> : BackgroundService where TDbContext : 
     {
         _logger = logger;
         _scopeFactory = scopeFactory;
-
-        _retryPolicy = ResiliencePolicies.CreateRetryPolicy(_logger, maxRetryAttempts: 3);
+        _retryPolicy = ResiliencePolicies.CreateRetryPolicy(_logger);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -37,12 +39,21 @@ public class OutboxProcessor<TDbContext> : BackgroundService where TDbContext : 
             {
                 await ProcessPendingEventsAsync(stoppingToken);
             }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("OutboxProcessor cancelado");
+                break;
+            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erro ao processar eventos da Outbox");
+                _logger.LogError(
+                    ex,
+                    "Erro crítico ao processar eventos da Outbox");
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(ProcessingIntervalSeconds), stoppingToken);
+            await Task.Delay(
+                TimeSpan.FromSeconds(ProcessingIntervalSeconds),
+                stoppingToken);
         }
 
         _logger.LogInformation("OutboxProcessor finalizado");
@@ -52,61 +63,98 @@ public class OutboxProcessor<TDbContext> : BackgroundService where TDbContext : 
     {
         using var scope = _scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<TDbContext>();
-        var messagePublisher = scope.ServiceProvider.GetRequiredService<IMessagePublisher>();
+        var publisher = scope.ServiceProvider.GetRequiredService<IMessagePublisher>();
+        //var cutoffTime = DateTime.UtcNow.AddSeconds(-LockTimeoutSeconds);
 
-        // Busca eventos pendentes
-        var outboxEvents = await context.Set<OutboxEvent>()
+        var pendingEvent = await context.Set<OutboxEvent>()
             .Where(e => !e.Processed && e.RetryCount < MaxRetryAttempts)
+            //.Where(e => e.ProcessedAt == null || e.ProcessedAt < cutoffTime)
             .OrderBy(e => e.CreatedAt)
             .Take(BatchSize)
             .ToListAsync(cancellationToken);
 
-        if (outboxEvents.Count == 0)
+        if (pendingEvent.Count == 0)
             return;
 
-        _logger.LogInformation("Processando {Count} eventos pendentes", outboxEvents.Count);
+        _logger.LogInformation(
+            "Processando {Count} eventos pendentes da Outbox",
+            pendingEvent.Count);
 
-        foreach (var outboxEvent in outboxEvents)
+        foreach (var @event in pendingEvent)
         {
-            try
-            {
-                // Tenta publicar no RabbitMQ com retry
-                await _retryPolicy.ExecuteAsync(async () =>
-                {
-                    await messagePublisher.PublishAsync(
-                        outboxEvent.EventType,
-                        outboxEvent.Payload,
-                        cancellationToken);
-                });
-
-                // Marca como processado
-                outboxEvent.Processed = true;
-                outboxEvent.ProcessedAt = DateTime.UtcNow;
-                outboxEvent.ErrorMessage = null;
-
-                _logger.LogInformation(
-                    "Evento {EventId} do tipo {EventType} publicado com sucesso",
-                    outboxEvent.Id, outboxEvent.EventType);
-            }
-            catch (Exception ex)
-            {
-                // Incrementa contador de tentativas
-                outboxEvent.RetryCount++;
-                outboxEvent.ErrorMessage = ex.Message;
-
-                _logger.LogError(ex,
-                    "Falha ao publicar evento {EventId} do tipo {EventType}. Tentativa {RetryCount}/{MaxRetry}",
-                    outboxEvent.Id, outboxEvent.EventType, outboxEvent.RetryCount, MaxRetryAttempts);
-
-                if (outboxEvent.RetryCount >= MaxRetryAttempts)
-                {
-                    _logger.LogError(
-                        "Evento {EventId} atingiu o número máximo de tentativas e será marcado como falho",
-                        outboxEvent.Id);
-                }
-            }
+            if (cancellationToken.IsCancellationRequested)
+                break;
+            await ProcessSingleEventAsync(publisher, @event, cancellationToken);
         }
 
-        await context.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await context.SaveChangesAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Erro ao salvar mudanças no contexto após processar eventos");
+        }
+    }
+
+    private async Task ProcessSingleEventAsync(IMessagePublisher publisher, OutboxEvent @event, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _retryPolicy.ExecuteAsync(async () =>
+            {
+                await publisher.PublishAsync(
+                    @event.EventType,
+                    @event.Payload,
+                    cancellationToken);
+            });
+
+            @event.MarkProcessed();
+            _logger.LogInformation("Evento {EventId} publicado com sucesso ({EventType})",
+                @event.Id,
+                @event.EventType);
+        }
+        catch (Exception ex)
+        {
+            @event.MarkFailed(TruncateErrorMessage(ex.Message));
+            _logger.LogError(
+                ex,
+                "Falha ao publicar evento {EventId} do tipo {EventType}. " +
+                "Tentativa {RetryCount}/{MaxRetry}",
+                @event.Id,
+                @event.EventType,
+                @event.RetryCount,
+                MaxRetryAttempts);
+
+            if (@event.RetryCount >= MaxRetryAttempts)
+                await SendAlertAsync(@event, ex);
+        }
+    }
+
+    private static string TruncateErrorMessage(string message, int maxLength = 2000)
+    {
+        if (string.IsNullOrEmpty(message))
+            return string.Empty;
+
+        return message.Length <= maxLength
+            ? message
+            : message[..maxLength];
+    }
+
+    private Task SendAlertAsync(OutboxEvent outboxEvent, Exception ex)
+    {
+        // TODO: Implementar notificação (email, Slack, Teams, etc)
+        _logger.LogCritical(
+            "ALERTA: Intervenção manual necessária. " +
+            "Evento {EventId} falhou permanentemente após {RetryCount} tentativas. " +
+            "Tipo: {EventType}, Erro: {Error}",
+            outboxEvent.Id,
+            outboxEvent.RetryCount,
+            outboxEvent.EventType,
+            ex.Message);
+
+        return Task.CompletedTask;
     }
 }
