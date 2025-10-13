@@ -67,7 +67,7 @@ public sealed class OutboxProcessor<TDbContext> : BackgroundService
         //var cutoffTime = DateTime.UtcNow.AddSeconds(-LockTimeoutSeconds);
 
         var pendingEvent = await context.Set<OutboxEvent>()
-            .Where(e => !e.Processed && e.RetryCount < MaxRetryAttempts)
+            //.Where(e => !e.Processed && e.RetryCount < MaxRetryAttempts)
             //.Where(e => e.ProcessedAt == null || e.ProcessedAt < cutoffTime)
             .OrderBy(e => e.CreatedAt)
             .Take(BatchSize)

@@ -45,12 +45,12 @@ internal sealed class ClientService(
             return null;
 
         var client = Domain.Entities.Client.Create(
-            request.Name,
-            request.DocumentNumber,
-            request.Email,
-            request.Telephone,
-            request.DateBirth,
-            request.MonthlyIncome);
+        request.Name,
+        request.DocumentNumber,
+        request.Email,
+        request.Telephone,
+        request.DateBirth,
+        request.MonthlyIncome);
 
         var @event = new ClientCreatedEvent(
             client.Id,

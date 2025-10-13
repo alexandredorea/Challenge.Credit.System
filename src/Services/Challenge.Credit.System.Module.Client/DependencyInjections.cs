@@ -4,6 +4,7 @@ using Challenge.Credit.System.Module.Client.Infrastructure.Data;
 using Challenge.Credit.System.Shared.Outbox;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -35,7 +36,15 @@ public static class DependencyInjections
 
     private static void AddOutboxPattern(this IHostApplicationBuilder builder)
     {
-        builder.Services.AddScoped<IOutboxService, OutboxService<ClientDbContext>>();
+        // Registrar OutboxService
+        builder.Services.AddScoped<IOutboxService>(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<OutboxService<ClientDbContext>>>();
+            var context = sp.GetRequiredService<ClientDbContext>();
+            return new OutboxService<ClientDbContext>(logger, context);
+        });
+
+        //builder.Services.AddScoped<IOutboxService, OutboxService<ClientDbContext>>();
 
         builder.Services.AddHostedService<OutboxProcessor<ClientDbContext>>();
     }
