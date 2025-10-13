@@ -20,12 +20,6 @@ public sealed class OutboxService<TDbContext>(
         var outboxEvent = OutboxEvent.Create(@event);
         context.Set<OutboxEvent>().Add(outboxEvent);
 
-        var entry = context.Entry(outboxEvent);
-        if (entry.State == EntityState.Detached)
-        {
-            context.Set<OutboxEvent>().Attach(outboxEvent);
-        }
-
         logger.LogDebug(
             "Outbox event added: {EventType} with ID {EventId}",
             @event,

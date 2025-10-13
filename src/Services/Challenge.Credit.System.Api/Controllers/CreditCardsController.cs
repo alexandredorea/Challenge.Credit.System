@@ -7,6 +7,6 @@ namespace Challenge.Credit.System.Api.Controllers;
 [Route("api/[controller]")]
 [Produces(MediaTypeNames.Application.Json)]
 [Consumes(MediaTypeNames.Application.Json)]
-public sealed class CreditProposalsController : ControllerBase
+public sealed class CreditCardsController : ControllerBase
 {
 }
