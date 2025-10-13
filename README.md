@@ -1,19 +1,19 @@
 # Sistema de Crédito - Desafio Técnico
-Repositório referente a desafio do Paraná Banco BMG, e cujo objetivo era avaliar minhas habilidades técnicas como pessoa candidata à vaga de Backend e capacidade de resolver problemas de forma eficiente e clara.
+Repositório referente a desafio do Paraná Banco, e cujo objetivo era avaliar minhas habilidades técnicas como pessoa candidata à vaga de Backend e capacidade de resolver problemas de forma eficiente e clara.
 
 O desafio proposto foi de implementação de um cadastro de clientes, análise de propostas de crédito e emissão de cartões com **resiliência** através do **Outbox Pattern**.
 
 
 ## 📋 Índice
 
-- [Sobre o Projeto](#sobre-o-projeto)
-- [Tecnologias Utilizadas](#tecnologias-utilizadas)
-- [Arquitetura](#arquitetura)
-- [Fluxograma](#fluxograma)
-- [Pré-requisitos](#pré-requisitos)
-- [Como Executar](#como-executar)
+- [Sobre o Projeto](#-sobre-o-projeto)
+- [Tecnologias Utilizadas](#%EF%B8%8F-tecnologias-utilizadas)
+- [Arquitetura](#%EF%B8%8F-arquitetura)
+- [Fluxograma](#-fluxograma)
+- [Pré-requisitos](#-pré-requisitos)
+- [Como Executar](#-como-executar)
 - [Endpoints da API](#endpoints-da-api)
-- [Testes](#testes)
+- [Testes](#-testes)
 
 ## 🎯 Sobre o Projeto
 
@@ -29,7 +29,7 @@ Sistema desenvolvido para gerenciar o ciclo completo de crédito:
 ✅ **Mensageria Assíncrona** - Comunicação via RabbitMQ  
 ✅ **Outbox Pattern** - Garantia de entrega de mensagens  
 ✅ **Resiliência** - Retry com backoff exponencial e Circuit Breaker  
-✅ **Testes Unitários** - Cobertura com xUnit, Moq e FluentAssertions  
+✅ **Testes Unitários** - Cobertura com xUnit, NSubstiture e FluentAssertions  
 ✅ **Docker** - Containerização completa da aplicação
 
 
@@ -49,7 +49,7 @@ Sistema desenvolvido para gerenciar o ciclo completo de crédito:
 
 ### Testes
 - **xUnit 2.9** - Framework de testes
-- **Moq 4.20** - Mock de dependências
+- **NSubstitute 5.3.0** - Mock de dependências
 - **FluentAssertions 7.0** - Assertions fluentes
 
 ### DevOps
@@ -119,7 +119,7 @@ A arquitetura escolhida foi o **Monolito Modular**. Embora a aplicação seja im
 | **Outbox Pattern** | Garante que **nenhum evento seja perdido**, mesmo se o RabbitMQ estiver fora do ar. Com um background service que processa eventos a cada 5s até 5 tentativas com backoff exponencial. |
 | **Resiliência com Polly e Dead-Letter Queues** | A combinação do Polly (para retries e circuit breaker) com as DLQs do RabbitMQ para se recuperar de falhas temporárias e isolar mensagens problemáticas para análise posterior. |
 | **Padrão de Resposta da API (Result Pattern)** | Padroniza todas as respostas da API, facilitando o consumo pelo cliente e o tratamento de sucessos e erros de forma consistente. |
-| **Testes Unitários com xUnit, Moq/NSubstitute e FluentAssertions** | Fornece uma suíte de testes robusta e legível, garantindo a qualidade e a manutenibilidade do código. |
+| **Testes Unitários com xUnit, NSubstitute e FluentAssertions** | Fornece uma suíte de testes robusta e legível, garantindo a qualidade e a manutenibilidade do código. |
 
 
 ## 📊 Fluxograma
