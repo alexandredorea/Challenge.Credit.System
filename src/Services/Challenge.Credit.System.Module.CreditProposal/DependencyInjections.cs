@@ -5,7 +5,6 @@ using Challenge.Credit.System.Module.CreditProposal.Core.Domain.Interfaces;
 using Challenge.Credit.System.Module.CreditProposal.Core.Domain.Services;
 using Challenge.Credit.System.Module.CreditProposal.Infrastructure.Data;
 using Challenge.Credit.System.Shared.Messaging;
-using Challenge.Credit.System.Shared.Messaging.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -44,7 +43,6 @@ public static class DependencyInjections
     private static void AddConsumers(this IHostApplicationBuilder builder)
     {
         builder.Services.AddScoped<ClientCreatedEventConsumer>();
-        builder.Services.AddScoped<IMessageConsumer>(sp => sp.GetRequiredService<ClientCreatedEventConsumer>());
 
         // Registra o RabbitMqConsumer como HostedService (Worker)
         var hostName = builder.Configuration["RabbitMq:HostName"] ?? "localhost";
@@ -53,10 +51,10 @@ public static class DependencyInjections
         var routingKey = builder.Configuration["RabbitMq:RoutingKey"] ?? "cliente.cadastrado"; // TODO: ajustar o arquivo de configuracao a mesma routing key usada no publish
 
         // Registrar o RabbitMqConsumer como HostedService (Worker) para consumir a fila 'cliente.cadastrado'
-        builder.Services.AddHostedService(sp =>
+        builder.Services.AddSingleton<IHostedService>(sp =>
         {
             var logger = sp.GetRequiredService<ILogger<RabbitMqConsumer>>();
-            return new RabbitMqConsumer(
+            var consumer = new RabbitMqConsumer(
                 serviceProvider: sp,
                 logger: logger,
                 hostName: hostName,
@@ -64,6 +62,9 @@ public static class DependencyInjections
                 exchangeName: exchangeName,
                 routingKey: routingKey,
                 messageHandlerType: typeof(ClientCreatedEventConsumer));
+
+            logger.LogInformation("Registrando consumer para fila: {QueueName}", queueName);
+            return consumer;
         });
     }
 }

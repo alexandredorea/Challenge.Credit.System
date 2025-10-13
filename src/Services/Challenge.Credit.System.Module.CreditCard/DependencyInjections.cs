@@ -3,7 +3,6 @@ using Challenge.Credit.System.Module.CreditCard.Core.Application.Interfaces;
 using Challenge.Credit.System.Module.CreditCard.Core.Application.Services;
 using Challenge.Credit.System.Module.CreditCard.Infrastructure.Data;
 using Challenge.Credit.System.Shared.Messaging;
-using Challenge.Credit.System.Shared.Messaging.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -36,16 +35,25 @@ public static class DependencyInjections
     private static void AddConsumers(this IHostApplicationBuilder builder)
     {
         builder.Services.AddScoped<CreditProposalApprovedEventConsumer>();
-        builder.Services.AddScoped<IMessageConsumer>(sp => sp.GetRequiredService<CreditProposalApprovedEventConsumer>());
 
-        builder.Services.AddHostedService(sp => new RabbitMqConsumer(
-            serviceProvider: sp,
-            logger: sp.GetRequiredService<ILogger<RabbitMqConsumer>>(),
-            hostName: builder.Configuration["RabbitMq:HostName"] ?? "localhost",
-            queueName: builder.Configuration["RabbitMq:QueueName"] ?? "proposta.aprovada",
-            exchangeName: builder.Configuration["RabbitMq:ExchangeName"] ?? "credit-system",
-            routingKey: builder.Configuration["RabbitMq:RoutingKey"] ?? "proposta.aprovada",
-            messageHandlerType: typeof(CreditProposalApprovedEventConsumer)
-        ));
+        var hostName = builder.Configuration["RabbitMq:HostName"] ?? "localhost";
+        var exchangeName = builder.Configuration["RabbitMq:ExchangeName"] ?? "credit-system";
+        var queueName = builder.Configuration["RabbitMq:QueueName"] ?? "proposta.aprovada";
+        var routingKey = builder.Configuration["RabbitMq:RoutingKey"] ?? "proposta.aprovada";
+        builder.Services.AddSingleton<IHostedService>(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<RabbitMqConsumer>>();
+            var consumer = new RabbitMqConsumer(
+                serviceProvider: sp,
+                logger: sp.GetRequiredService<ILogger<RabbitMqConsumer>>(),
+                hostName: hostName,
+                queueName: queueName,
+                exchangeName: exchangeName,
+                routingKey: routingKey,
+                messageHandlerType: typeof(CreditProposalApprovedEventConsumer));
+
+            logger.LogInformation("Registrando consumer para fila: {QueueName}", queueName);
+            return consumer;
+        });
     }
 }
