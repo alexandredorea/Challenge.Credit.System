@@ -101,7 +101,7 @@ A comunicação assíncrona via mensageria oferece desacoplamento temporal e esp
 ## 4. Resiliência com Polly e Dead-Letter Queues
 
 ### Decisão
-Implementei políticas de **retry com backoff exponencial** usando a biblioteca **Polly** e configuramos **Dead-Letter Queues (DLQ)** no RabbitMQ.
+Implementei políticas de **retry com backoff exponencial** usando a biblioteca **Polly** e **Dead-Letter Queues (DLQ)** no RabbitMQ.
 
 ### Justificativa
 
@@ -178,9 +178,9 @@ Implementei uma suíte de testes unitários usando **xUnit** como framework de t
 Testes unitários são essenciais para garantir a qualidade e a manutenibilidade do código. A combinação dessas três bibliotecas oferece uma experiência de desenvolvimento de testes mais simples e produtiva.
 
 **Cobertura de Testes:**
-- **Serviços de Negócio:** Testamos as regras de negócio de cada módulo (cálculo de score, validações, etc.).
-- **Isolamento:** Usamos mocks para isolar as dependências (ex: `IMessagePublisher`, `I<Modulo>DbContext`).
-- **Legibilidade:** FluentAssertions torna as asserções mais legíveis e expressivas.
+- **Serviços de Negócio:** Foram testadas as regras de negócio de cada módulo (cálculo de score, validações, etc.).
+- **Isolamento:** Foram usados mocks para isolar as dependências (ex: `IMessagePublisher`, `I<Modulo>DbContext`).
+- **Legibilidade:** Foi usado FluentAssertions para tornar as asserções mais legíveis e expressivas.
 
 
 **Vantagens:**
